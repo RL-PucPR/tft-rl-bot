@@ -1,4 +1,5 @@
 import pyautogui
+from controller import Controller
 from database import DDragon
 from screen import ScreenInterpreter
 from time import sleep
@@ -14,5 +15,5 @@ def testReader():
 
 
 if __name__ == '__main__':
-    testReader()
-    # DDragon()
+    print(Controller(DDragon()).pool)
+    # testReader()
