@@ -5,6 +5,8 @@ class DDragon:
 
     champions = []
     items = []
+    pool = {}
+    odds = {}
 
     def request(self):
         import requests
@@ -33,6 +35,11 @@ class DDragon:
                 "traits": champion["traits"],
                 "ability": champion["ability"],
             })
+
+        with open("resources/base_values.json", "r") as f:
+            data = json.load(f)
+            self.pool = data["pool"]
+            self.odds = data["odds"]
 
     def __init__(self):
         self.load()

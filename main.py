@@ -15,5 +15,9 @@ def testReader():
 
 
 if __name__ == '__main__':
-    print(Controller(DDragon()).pool)
+    c = Controller(DDragon())
+    print(c.pool)
+    print(c.odds)
+    for i in range(9):
+        print(c.getShop(i+1))
     # testReader()
