@@ -27,6 +27,11 @@ class Controller:
     # }
     odds = {}
 
+    def changePoolAmmount(self, shop, func):
+        for cost, championsByCost in self.pool.items():
+            for i in range(len(championsByCost)):
+                self.pool[cost][i]["ammount"] = func(championsByCost[i]["ammount"], shop.count(championsByCost[i]["championInfo"]["name"]))
+
     def getShop(self, level):
         oddsByCost = self.odds[level]
         choices = []
@@ -36,12 +41,16 @@ class Controller:
                 choices += [champion["championInfo"]["name"]]*int(champion["ammount"]*odd)
         shop = []
         for i in range(5):
-            shop.append(random.choices(choices)[0])
+            if len(choices) > 0:
+                shop.append(random.choices(choices)[0])
+            else:
+                None
+        self.changePoolAmmount(shop, lambda a, b: a-b)
         return shop
 
     def refreshShop(self, oldShop, level):
-        # TODO - Re-add oldShop champions to ammount
-        self.getShop(level)
+        self.changePoolAmmount(oldShop, lambda a, b: a+b)
+        return self.getShop(level)
 
     def __init__(self, database):
 

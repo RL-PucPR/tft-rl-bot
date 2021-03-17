@@ -18,6 +18,8 @@ if __name__ == '__main__':
     c = Controller(DDragon())
     print(c.pool)
     print(c.odds)
+    shop = c.getShop(1)
     for i in range(9):
-        print(c.getShop(i+1))
+        print(shop)
+        shop = c.refreshShop(shop, i + 1)
     # testReader()
