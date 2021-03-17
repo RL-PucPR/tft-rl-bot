@@ -59,11 +59,18 @@ class Controller:
             poolSize[int(key)] = value
 
         for champion in database.champions:
-            self.pool[champion["cost"]].append({
-                "championInfo": champion,
-                "ammount": poolSize[champion["cost"]],
-                "maxAmmount": poolSize[champion["cost"]],
-            })
+            if len(champion["traits"]) > 0:
+                self.pool[champion["cost"]].append({
+                    "championInfo": champion,
+                    "ammount": poolSize[champion["cost"]],
+                    "maxAmmount": poolSize[champion["cost"]],
+                })
+            else:
+                self.pool[champion["cost"]].append({
+                    "championInfo": champion,
+                    "ammount": 0,
+                    "maxAmmount": 0,
+                })
 
         for level, oddsByCost in database.odds.items():
             tempOdds = {}
