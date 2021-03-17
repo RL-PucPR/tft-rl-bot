@@ -7,6 +7,7 @@ import pyautogui
 
 
 class ScreenInterpreter:
+    # ScreenInterpreter will only work with the game running in fullscreen
 
     # constructor
     def __init__(self):
@@ -42,7 +43,7 @@ class ScreenInterpreter:
         storeWidthMod = 201/1920
         x = self.screen['width']*leftWidthMod
         for i in range(5):
-            self.data["store"][i] = self.read(
+            name = self.read(
                 self.cropAndEdit(
                     screenshot,
                     x,
@@ -51,6 +52,7 @@ class ScreenInterpreter:
                     self.screen['height'] * lowerHeightMod
                 )
             ).replace("\x0c", "").replace("\n", "").replace(" ", "")
+            self.data["store"][i] = name if name == "" else None
             x += self.screen['width'] * storeWidthMod
 
     def updateGold(self, screenshot):

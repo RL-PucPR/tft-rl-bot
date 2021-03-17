@@ -1,6 +1,6 @@
 import pyautogui
 from database import DDragon
-from ScreenInterpreter import ScreenInterpreter
+from screen import ScreenInterpreter
 from time import sleep
 
 
@@ -15,5 +15,4 @@ def testReader():
 
 if __name__ == '__main__':
     testReader()
-    # print_hi('PyCharm')
     # DDragon()
