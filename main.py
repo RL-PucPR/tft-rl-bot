@@ -22,6 +22,7 @@ def testTrainer():
         print(shop)
         shop = c.refreshShop(shop, i + 1)
 
+
 if __name__ == '__main__':
     testTrainer()
     # testReader()

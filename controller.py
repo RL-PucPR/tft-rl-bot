@@ -44,7 +44,7 @@ class Controller:
             if len(choices) > 0:
                 shop.append(random.choices(choices)[0])
             else:
-                None
+                shop.append(None)
         self.changePoolAmmount(shop, lambda a, b: a-b)
         return shop
 
