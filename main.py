@@ -1,5 +1,4 @@
 from controller import Controller
-from database import DDragon
 from state import ScreenInterpreter
 from time import sleep
 
@@ -12,7 +11,7 @@ def testReader():
         sleep(1)
 
 def testTrainer():
-    c = Controller(DDragon())
+    c = Controller()
     print(c.pool)
     print(c.odds)
     shop = c.refreshShop([None, None, None, None, None], 1)

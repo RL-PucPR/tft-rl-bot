@@ -1,5 +1,5 @@
-import json
 import random
+from database import DDragon
 
 class Controller:
 
@@ -52,7 +52,8 @@ class Controller:
         self.changePoolAmmount(oldShop, lambda a, b: a+b)
         return self.getShop(level)
 
-    def __init__(self, database):
+    def __init__(self):
+        database = DDragon()
 
         poolSize = {}
         for key, value in database.pool.items():
