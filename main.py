@@ -1,14 +1,12 @@
-import pyautogui
 from controller import Controller
 from database import DDragon
-from screen import ScreenInterpreter
+from state import ScreenInterpreter
 from time import sleep
 
 
 def testReader():
     si = ScreenInterpreter()
     while True:
-        si.retrieveData(pyautogui.screenshot())
         print(si.getStore())
         print(si.getGold())
         sleep(1)
@@ -24,5 +22,5 @@ def testTrainer():
 
 
 if __name__ == '__main__':
-    testTrainer()
-    # testReader()
+    # testTrainer()
+    testReader()
