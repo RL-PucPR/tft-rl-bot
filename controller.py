@@ -32,7 +32,7 @@ class Controller:
             for i in range(len(championsByCost)):
                 self.pool[cost][i]["ammount"] = func(championsByCost[i]["ammount"], shop.count(championsByCost[i]["championInfo"]["name"]))
 
-    def getShop(self, level):
+    def generateShop(self, level):
         oddsByCost = self.odds[level]
         choices = []
         for cost in range(1, 6):
@@ -50,7 +50,7 @@ class Controller:
 
     def refreshShop(self, oldShop, level):
         self.changePoolAmmount(oldShop, lambda a, b: a+b)
-        return self.getShop(level)
+        return self.generateShop(level)
 
     def __init__(self):
         database = DDragon()
