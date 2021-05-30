@@ -1,5 +1,5 @@
 from controller import Controller
-from state import ScreenInterpreter
+from screen import ScreenInterpreter
 from time import sleep
 
 

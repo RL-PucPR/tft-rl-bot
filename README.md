@@ -1,5 +1,7 @@
 # Teamfight Tactics Reinforcement Learning Bot
 
+This project is destined to the development of a Reinforcement Learning Agent for the purpose of Academic Research
+
 # Installation
 
 ### Install dependencies
