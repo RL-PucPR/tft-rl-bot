@@ -1,17 +1,42 @@
 # Source: https://raw.githubusercontent.com/chris8736/tft-ai/master/ScreenInterpreter.py
 
 from PIL import Image
+from controller import Controller
 import PIL.ImageOps
 import pytesseract
 import pyautogui
 import time
 
 
-class ScreenInterpreter():
+def read(img, blacklist=".,", whitelist=None):
+    """
+    Performs the tesseract operation on a cropped image after inversion and desaturation.
+    """
+    if whitelist:
+        return pytesseract.image_to_string(
+            img, config="-c tessedit_char_whitelist=" + whitelist
+        )
+    else:
+        return pytesseract.image_to_string(
+            img, config="-c tessedit_char_blacklist=" + blacklist
+        )
+
+
+def cropAndEdit(img, x1, y1, x2, y2):
+    """
+    Crops, inverts, and desaturates image.
+    """
+    img1 = PIL.ImageOps.invert(img.crop((x1, y1, x2, y2)))
+    img1 = img1.convert("LA")
+    img1.save("tmp/out.png")
+    return img1
+
+
+class ScreenInterpreter(Controller):
     # ScreenInterpreter will only work with the game running in fullscreen
 
     # constructor
-    def __init__(self, maxTime=5):
+    def __init__(self, max_time=5):
         super().__init__()
         pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
         # track relevant data on the frame
@@ -24,58 +49,60 @@ class ScreenInterpreter():
             "screenshot": pyautogui.screenshot(),
             "timestamp": 0,
         }
-        self.maxTime = maxTime
+        self.maxTime = max_time
 
-    def updateStore(self):
+    def update_store(self):
         # run tesseract to locate text
         # recognize champs in store
-        upperHeightMod = 1041/1080
-        lowerHeightMod = 1069/1080
-        leftWidthMod = 485/1920
-        nameWidthMod = 140/1920
-        storeWidthMod = 201/1920
-        x = self.screen['width']*leftWidthMod
-        for i in range(5):
-            name = self.read(
-                self.cropAndEdit(
+        upper_height_mod = 1041 / 1080
+        lower_height_mod = 1069 / 1080
+        left_width_mod = 485 / 1920
+        name_width_mod = 140 / 1920
+        store_width_mod = 201 / 1920
+        x = self.screen['width'] * left_width_mod
+        store = [None] * 5
+        for i in range(len(store)):
+            name = read(
+                cropAndEdit(
                     self.screenshot["screenshot"],
                     x,
-                    self.screen['height'] * upperHeightMod,
-                    x + self.screen['width'] * nameWidthMod,
-                    self.screen['height'] * lowerHeightMod
+                    self.screen['height'] * upper_height_mod,
+                    x + self.screen['width'] * name_width_mod,
+                    self.screen['height'] * lower_height_mod
                 )
             ).replace("\x0c", "").replace("\n", "").replace(" ", "")
-            self.data["store"][i] = name if name == "" else None
-            x += self.screen['width'] * storeWidthMod
+            store[i] = name if name == "" else None
+            x += self.screen['width'] * store_width_mod
+        return store
 
-    def updateGold(self):
+    def update_gold(self):
         # see gold
-        upperHeightMod = 881/1080
-        lowerHeightMod = 910/1080
-        leftWidthMod = 872/1920
-        rightWidthMod = 906/1920
+        upper_height_mod = 881 / 1080
+        lower_height_mod = 910 / 1080
+        left_width_mod = 872 / 1920
+        right_width_mod = 906 / 1920
         thresh = 150
         fn = lambda x: 255 if x > thresh else 0
         ss = (
-            self.cropAndEdit(
+            cropAndEdit(
                 self.screenshot["screenshot"],
-                self.screen['width'] * leftWidthMod,
-                self.screen['height'] * upperHeightMod,
-                self.screen['width'] * rightWidthMod,
-                self.screen['height'] * lowerHeightMod
+                self.screen['width'] * left_width_mod,
+                self.screen['height'] * upper_height_mod,
+                self.screen['width'] * right_width_mod,
+                self.screen['height'] * lower_height_mod
             )
             .resize((200, 200), Image.ANTIALIAS)
             .convert("L")
             .point(fn, mode="1")
         )
-        str_gold = self.read(ss, whitelist="0123456789")
+        str_gold = read(ss, whitelist="0123456789")
         if len(str_gold) < 1:
             str_gold = pytesseract.image_to_string(ss,
-                            config="--psm 10 -c tessedit_char_whitelist=0123456789")
+                                                   config="--psm 10 -c tessedit_char_whitelist=0123456789")
         try:
-            self.data["gold"] = int(str_gold)
+            return int(str_gold)
         except:
-            self.data["gold"] = 0
+            return 0
 
     # main function: reads data from in-game screenshot
     def refresh(self):
@@ -90,34 +117,10 @@ class ScreenInterpreter():
                 "timestamp": now,
             }
 
-    def cropAndEdit(self, img, x1, y1, x2, y2):
-        """
-        Crops, inverts, and desaturates image.
-        """
-        img1 = PIL.ImageOps.invert(img.crop((x1, y1, x2, y2)))
-        img1 = img1.convert("LA")
-        img1.save("tmp/out.png")
-        return img1
-
-    def read(self, img, blacklist=".,", whitelist=None):
-        """
-        Performs the tesseract operation on a cropped image after inversion and desaturation.
-        """
-        if whitelist:
-            return pytesseract.image_to_string(
-                img, config="-c tessedit_char_whitelist=" + whitelist
-            )
-        else:
-            return pytesseract.image_to_string(
-                img, config="-c tessedit_char_blacklist=" + blacklist
-            )
-
-    def getStore(self):
+    def get_store(self):
         self.refresh()
-        self.updateStore()
-        return super().getStore()
+        return self.update_store()
 
-    def getGold(self):
+    def get_gold(self):
         self.refresh()
-        self.updateGold()
-        return super().getGold()
+        return self.update_gold()

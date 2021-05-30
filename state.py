@@ -1,4 +1,3 @@
-
 class GameState:
     # champion format
     # {
@@ -19,13 +18,13 @@ class GameState:
 
     # TODO - define getters to be called by player
 
-    def getGold(self):
+    def get_gold(self):
         """
         Returns current gold count (use after retrieval).
         """
         return self.data["gold"]
 
-    def getStore(self):
+    def get_store(self):
         """
         Returns array containing champions found in store (use after retrieval).
         """
@@ -33,14 +32,12 @@ class GameState:
 
     def update(self):
         # TODO - all getters from acquirer
-        self.data["gold"] = self.acquirer.getGold()
+        self.data["gold"] = self.controller.get_gold()
 
     def apply(self, func, *args, **kwargs):
-        # TODO - I want to do some actions in gamestate (like buying from the store)
-        self.acquirer.func(args, kwargs)
+        # TODO - I want to do some actions in GameState (like buying from the store)
+        self.controller.func(args, kwargs)
         self.update()
 
-    def __init__(self, acquirer):
-        self.acquirer = acquirer
-
-
+    def __init__(self, controller):
+        self.controller = controller

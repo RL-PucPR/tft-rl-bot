@@ -1,25 +1,26 @@
-from controller import Controller
+from emulator import Emulator
 from screen import ScreenInterpreter
 from time import sleep
 
 
-def testReader():
+def test_reader():
     si = ScreenInterpreter()
     while True:
-        print(si.getStore())
-        print(si.getGold())
+        print(si.get_store())
+        print(si.get_gold())
         sleep(1)
 
-def testTrainer():
-    c = Controller()
+
+def test_trainer():
+    c = Emulator()
     print(c.pool)
     print(c.odds)
-    shop = c.refreshShop([None, None, None, None, None], 1)
+    shop = c.refresh_shop([None, None, None, None, None], 1)
     for i in range(9):
         print(shop)
-        shop = c.refreshShop(shop, i + 1)
+        shop = c.refresh_shop(shop, i + 1)
 
 
 if __name__ == '__main__':
-    # testTrainer()
-    testReader()
+    # test_trainer()
+    test_reader()
