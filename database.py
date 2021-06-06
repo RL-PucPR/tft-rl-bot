@@ -1,6 +1,15 @@
 import json
 
 
+def request():
+    import requests
+
+    r = requests.get('http://raw.communitydragon.org/latest/cdragon/tft/en_us.json')
+
+    with open("resources/en_us_.json", "w") as f:
+        json.dump(r.json(), f)
+
+
 class DDragon:
 
     champions = []
@@ -8,26 +17,18 @@ class DDragon:
     pool = {}
     odds = {}
 
-    def request(self):
-        import requests
-
-        r = requests.get('http://raw.communitydragon.org/latest/cdragon/tft/en_us.json')
-
-        with open("resources/en_us_.json", "w") as f:
-            json.dump(r.json(), f)
-
     def load(self):
         # Gets latest set
         with open("resources/en_us_.json", "r") as f:
             data = json.load(f)
-        setName = ""
-        latestSet = {"champions": []}
+        set_name = ""
+        latest_set = {"champions": []}
         for set in data["setData"]:
-            if setName < set["mutator"]:
-                latestSet = set
-                setName = set["mutator"]
+            if set_name < set["mutator"]:
+                latest_set = set
+                set_name = set["mutator"]
 
-        for champion in latestSet["champions"]:
+        for champion in latest_set["champions"]:
             self.champions.append({
                 "name": champion["name"],
                 "cost": champion["cost"],

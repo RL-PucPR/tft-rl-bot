@@ -8,6 +8,30 @@ import time
 from acquirer import Acquirer
 
 
+def read(img, blacklist=".,", whitelist=None):
+    """
+    Performs the tesseract operation on a cropped image after inversion and desaturation.
+    """
+    if whitelist:
+        return pytesseract.image_to_string(
+            img, config="-c tessedit_char_whitelist=" + whitelist
+        )
+    else:
+        return pytesseract.image_to_string(
+            img, config="-c tessedit_char_blacklist=" + blacklist
+        )
+
+
+def cropAndEdit(img, x1, y1, x2, y2):
+    """
+    Crops, inverts, and desaturates image.
+    """
+    img1 = PIL.ImageOps.invert(img.crop((x1, y1, x2, y2)))
+    img1 = img1.convert("LA")
+    img1.save("tmp/out.png")
+    return img1
+
+
 class ScreenInterpreter(Acquirer):
     # ScreenInterpreter will only work with the game running in fullscreen
 
@@ -38,8 +62,8 @@ class ScreenInterpreter(Acquirer):
         x = self.screen['width']*leftWidthMod
         store = [None] * 5
         for i in range(5):
-            name = self.read(
-                self.cropAndEdit(
+            name = read(
+                cropAndEdit(
                     self.screenshot["screenshot"],
                     x,
                     self.screen['height'] * upperHeightMod,
@@ -60,7 +84,7 @@ class ScreenInterpreter(Acquirer):
         thresh = 150
         fn = lambda x: 255 if x > thresh else 0
         ss = (
-            self.cropAndEdit(
+            cropAndEdit(
                 self.screenshot["screenshot"],
                 self.screen['width'] * leftWidthMod,
                 self.screen['height'] * upperHeightMod,
@@ -71,7 +95,7 @@ class ScreenInterpreter(Acquirer):
             .convert("L")
             .point(fn, mode="1")
         )
-        str_gold = self.read(ss, whitelist="0123456789")
+        str_gold = read(ss, whitelist="0123456789")
         if len(str_gold) < 1:
             str_gold = pytesseract.image_to_string(ss,
                             config="--psm 10 -c tessedit_char_whitelist=0123456789")
@@ -89,7 +113,7 @@ class ScreenInterpreter(Acquirer):
         thresh = 150
         fn = lambda x: 255 if x > thresh else 0
         ss = (
-            self.cropAndEdit(
+            cropAndEdit(
                 self.screenshot["screenshot"],
                 self.screen['width'] * leftWidthMod,
                 self.screen['height'] * upperHeightMod,
@@ -100,7 +124,7 @@ class ScreenInterpreter(Acquirer):
             .convert("L")
             .point(fn, mode="1")
         )
-        str_gold = self.read(ss, whitelist="0123456789")
+        str_gold = read(ss, whitelist="0123456789")
         if len(str_gold) < 1:
             str_gold = pytesseract.image_to_string(ss,
                             config="--psm 10 -c tessedit_char_whitelist=0123456789")
@@ -121,28 +145,6 @@ class ScreenInterpreter(Acquirer):
                 "screenshot": pyautogui.screenshot(),
                 "timestamp": now,
             }
-
-    def cropAndEdit(self, img, x1, y1, x2, y2):
-        """
-        Crops, inverts, and desaturates image.
-        """
-        img1 = PIL.ImageOps.invert(img.crop((x1, y1, x2, y2)))
-        img1 = img1.convert("LA")
-        img1.save("tmp/out.png")
-        return img1
-
-    def read(self, img, blacklist=".,", whitelist=None):
-        """
-        Performs the tesseract operation on a cropped image after inversion and desaturation.
-        """
-        if whitelist:
-            return pytesseract.image_to_string(
-                img, config="-c tessedit_char_whitelist=" + whitelist
-            )
-        else:
-            return pytesseract.image_to_string(
-                img, config="-c tessedit_char_blacklist=" + blacklist
-            )
 
     def getStore(self):
         self.refresh()

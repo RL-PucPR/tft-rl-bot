@@ -17,7 +17,6 @@ class Getters:
         """
         Returns current gold count (use after retrieval).
         """
-        print("check1")
         return self.data["gold"]
 
     def getLevel(self):
