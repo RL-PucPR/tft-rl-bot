@@ -2,16 +2,17 @@
 
 from PIL import Image
 import PIL.ImageOps
-import pytesseract
-import pyautogui
+import pytesseract      # Image interpreter
+import pyautogui        # Screen manipulation
 import time
+from acquirer import Acquirer
 
 
-class ScreenInterpreter():
+class ScreenInterpreter(Acquirer):
     # ScreenInterpreter will only work with the game running in fullscreen
 
     # constructor
-    def __init__(self, maxTime=5):
+    def __init__(self, maxTime=0.5):
         super().__init__()
         pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
         # track relevant data on the frame
@@ -26,7 +27,7 @@ class ScreenInterpreter():
         }
         self.maxTime = maxTime
 
-    def updateStore(self):
+    def fetchStore(self):
         # run tesseract to locate text
         # recognize champs in store
         upperHeightMod = 1041/1080
@@ -35,6 +36,7 @@ class ScreenInterpreter():
         nameWidthMod = 140/1920
         storeWidthMod = 201/1920
         x = self.screen['width']*leftWidthMod
+        store = [None] * 5
         for i in range(5):
             name = self.read(
                 self.cropAndEdit(
@@ -45,10 +47,40 @@ class ScreenInterpreter():
                     self.screen['height'] * lowerHeightMod
                 )
             ).replace("\x0c", "").replace("\n", "").replace(" ", "")
-            self.data["store"][i] = name if name == "" else None
+            store[i] = name if name != "" else None
             x += self.screen['width'] * storeWidthMod
+        return store
 
-    def updateGold(self):
+    def fetchLevel(self):
+        # see  level
+        upperHeightMod = 881/1080
+        lowerHeightMod = 910/1080
+        leftWidthMod = 872/1920
+        rightWidthMod = 906/1920
+        thresh = 150
+        fn = lambda x: 255 if x > thresh else 0
+        ss = (
+            self.cropAndEdit(
+                self.screenshot["screenshot"],
+                self.screen['width'] * leftWidthMod,
+                self.screen['height'] * upperHeightMod,
+                self.screen['width'] * rightWidthMod,
+                self.screen['height'] * lowerHeightMod
+            )
+            .resize((200, 200), Image.ANTIALIAS)
+            .convert("L")
+            .point(fn, mode="1")
+        )
+        str_gold = self.read(ss, whitelist="0123456789")
+        if len(str_gold) < 1:
+            str_gold = pytesseract.image_to_string(ss,
+                            config="--psm 10 -c tessedit_char_whitelist=0123456789")
+        try:
+            return int(str_gold)
+        except:
+            return 0
+
+    def fetchGold(self):
         # see gold
         upperHeightMod = 881/1080
         lowerHeightMod = 910/1080
@@ -73,9 +105,9 @@ class ScreenInterpreter():
             str_gold = pytesseract.image_to_string(ss,
                             config="--psm 10 -c tessedit_char_whitelist=0123456789")
         try:
-            self.data["gold"] = int(str_gold)
+            return int(str_gold)
         except:
-            self.data["gold"] = 0
+            return 0
 
     # main function: reads data from in-game screenshot
     def refresh(self):
@@ -114,10 +146,18 @@ class ScreenInterpreter():
 
     def getStore(self):
         self.refresh()
-        self.updateStore()
-        return super().getStore()
+        return self.fetchStore()
+
+    def getLevel(self):
+        self.refresh()
+        return self.fetchLevel()
 
     def getGold(self):
         self.refresh()
-        self.updateGold()
-        return super().getGold()
+        return self.fetchGold()
+
+    def getXpToLevelUp(self):
+        pass
+
+    def getHp(self):
+        pass

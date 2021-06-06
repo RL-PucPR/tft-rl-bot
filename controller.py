@@ -1,8 +1,9 @@
 import random
 from database import DDragon
+from acquirer import Acquirer
 
 
-class Controller:
+class Controller(Acquirer):
     # Format:
     # pool = {
     #     cost: [{
