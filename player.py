@@ -64,16 +64,7 @@ class Player:
         self.state.wait()
 
     def randomAction(self):
-        actions = [
-            self.buyChampion,
-            self.randomMove,
-            self.randomSell,
-            self.levelUp,
-            self.wait,
-        ]
-        func = random.choice(actions)
-        print(func)
-        func()
+        random.choice(self.actions)()
 
     def __init__(self, state):
         self.state = state
@@ -87,3 +78,11 @@ class Player:
             self.moveInBench,
             self.moveInBoard,
         ]
+        self.actions = [
+            self.buyChampion,
+            self.randomMove,
+            self.randomSell,
+            self.levelUp,
+            self.wait,
+        ]
+
