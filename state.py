@@ -1,3 +1,5 @@
+import random
+import time
 
 
 class Getters:
@@ -43,6 +45,14 @@ class Getters:
         """
         return self.data["hp"]
 
+    def randomBenchPosition(self):
+        return random.choice(range(len(self.data["bench"])))
+
+    def randomBoardPosition(self):
+        xAxis = random.choice(range(len(self.data["board"])))
+        yAxis = random.choice(range(len(self.data["board"][xAxis])))
+        return xAxis, yAxis
+
     def update(self):
         self.data["gold"] = self.acquirer.getGold()
         self.data["level"] = self.acquirer.getLevel()
@@ -52,7 +62,36 @@ class Getters:
 
 
 class Setters:
-    pass
+    acquirer = None
+
+    def buyChampion(self, position=None):
+        print("BUYING CHAMPION " + str(position))
+        self.acquirer.buyChampion(position)
+
+    def moveFromBenchToBoard(self, start, end):
+        print("MOVING FROM "+str(start)+" to "+str(end))
+
+    def moveFromBoardToBench(self, start, end):
+        print("MOVING FROM "+str(start)+" to "+str(end))
+
+    def moveInBench(self, start, end):
+        print("MOVING FROM "+str(start)+" to "+str(end))
+
+    def moveInBoard(self, start, end):
+        print("MOVING FROM "+str(start)+" to "+str(end))
+
+    def sellFromBench(self, position):
+        print("SELLING "+str(position))
+
+    def sellFromBoard(self, position):
+        print("SELLING "+str(position))
+
+    def buyExp(self):
+        print("BUYING EXP")
+
+    def wait(self):
+        print("WAITING")
+        time.sleep(1)
 
 
 class GameState(Getters, Setters):

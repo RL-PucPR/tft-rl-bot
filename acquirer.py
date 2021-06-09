@@ -1,15 +1,18 @@
 class Acquirer:
     def getGold(self):
-        pass
+        return 0
 
     def getLevel(self):
-        pass
+        return 0
 
     def getStore(self):
-        pass
+        return [None] * 5
 
     def getXpToLevelUp(self):
-        pass
+        return 0
 
     def getHp(self):
+        return 0
+
+    def buyChampion(self, position):
         pass

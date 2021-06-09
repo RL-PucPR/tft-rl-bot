@@ -1,11 +1,13 @@
 from controller import Controller
 from screen import ScreenInterpreter
 from state import GameState
+from player import Player
 from time import sleep
 
 
 def testReader():
     gs = GameState(ScreenInterpreter())
+    player = Player(gs)
     while True:
         gs.update()
         print(gs.getGold())
@@ -13,7 +15,9 @@ def testReader():
         print(gs.getStore())
         print(gs.getXpToLevelUp())
         print(gs.getHp())
+        player.randomAction()
         sleep(1)
+
 
 def testTrainer():
     c = Controller()
@@ -28,3 +32,4 @@ def testTrainer():
 if __name__ == '__main__':
     # testTrainer()
     testReader()
+    # testPlayer()

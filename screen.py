@@ -159,7 +159,7 @@ class ScreenInterpreter(Acquirer):
         return self.fetchGold()
 
     def getXpToLevelUp(self):
-        pass
+        return 0
 
     def getHp(self):
-        pass
+        return 0
