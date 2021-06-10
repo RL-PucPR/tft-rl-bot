@@ -156,8 +156,8 @@ class ScreenInterpreter(Acquirer):
         upperHeightMod = 207/1080
         leftWidthMod = 1775/1920
         rightWidthMod = 1827/1920
-        hpHeightMod = 35/1920
-        playerHeightMod = 72/1920
+        hpHeightMod = 35/1080
+        playerHeightMod = 72/1080
         x = self.screen['height'] * upperHeightMod
         thresh = 150
         fn = lambda a: 255 if a > thresh else 0
@@ -211,8 +211,8 @@ class ScreenInterpreter(Acquirer):
 
     def getXpToLevelUp(self):
         self.refresh()
-        return self.fetchXpToLevelUp()
-        # return 0
+        # return self.fetchXpToLevelUp()
+        return 0
 
     def getHp(self):
         self.refresh()
