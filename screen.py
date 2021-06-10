@@ -77,10 +77,10 @@ class ScreenInterpreter(Acquirer):
 
     def fetchLevel(self):
         # see  level
-        upperHeightMod = 881/1080
-        lowerHeightMod = 910/1080
-        leftWidthMod = 872/1920
-        rightWidthMod = 906/1920
+        upperHeightMod = 880/1080
+        lowerHeightMod = 908/1080
+        leftWidthMod = 314/1920
+        rightWidthMod = 345/1920
         thresh = 150
         fn = lambda x: 255 if x > thresh else 0
         ss = (
@@ -95,12 +95,12 @@ class ScreenInterpreter(Acquirer):
             .convert("L")
             .point(fn, mode="1")
         )
-        str_gold = read(ss, whitelist="0123456789")
-        if len(str_gold) < 1:
-            str_gold = pytesseract.image_to_string(ss,
+        strLevel = read(ss, whitelist="0123456789")
+        if len(strLevel) < 1:
+            strLevel = pytesseract.image_to_string(ss,
                             config="--psm 10 -c tessedit_char_whitelist=0123456789")
         try:
-            return int(str_gold)
+            return int(strLevel)
         except:
             return 0
 
@@ -124,14 +124,65 @@ class ScreenInterpreter(Acquirer):
             .convert("L")
             .point(fn, mode="1")
         )
-        str_gold = read(ss, whitelist="0123456789")
-        if len(str_gold) < 1:
-            str_gold = pytesseract.image_to_string(ss,
+        strGold = read(ss, whitelist="0123456789")
+        if len(strGold) < 1:
+            strGold = pytesseract.image_to_string(ss,
                             config="--psm 10 -c tessedit_char_whitelist=0123456789")
         try:
-            return int(str_gold)
+            return int(strGold)
         except:
             return 0
+
+    def fetchXpToLevelUp(self):
+        # run tesseract to locate text
+        # recognize champs in store
+        upperHeightMod = 882/1080
+        lowerHeightMod = 908/1080
+        leftWidthMod = 406/1920
+        rightWidthMod = 447/1920
+        xp = read(
+            cropAndEdit(
+                self.screenshot["screenshot"],
+                self.screen['width'] * leftWidthMod,
+                self.screen['height'] * upperHeightMod,
+                self.screen['width'] * rightWidthMod,
+                self.screen['height'] * lowerHeightMod
+            )
+        ).replace("\x0c", "").replace("\n", "").replace(" ", "")
+        actualXp, requiredXp = xp.split("/") if xp != "" else 0, 0
+        return int(requiredXp) - int(actualXp)
+
+    def fetchHp(self):
+        upperHeightMod = 207/1080
+        leftWidthMod = 1775/1920
+        rightWidthMod = 1827/1920
+        hpHeightMod = 35/1920
+        playerHeightMod = 72/1920
+        x = self.screen['height'] * upperHeightMod
+        thresh = 150
+        fn = lambda a: 255 if a > thresh else 0
+        for i in range(8):
+            ss = (
+                cropAndEdit(
+                    self.screenshot["screenshot"],
+                    self.screen['width'] * leftWidthMod,
+                    x,
+                    self.screen['width'] * rightWidthMod,
+                    x + self.screen['height'] * hpHeightMod
+                )
+                .resize((200, 200), Image.ANTIALIAS)
+                .convert("L")
+                .point(fn, mode="1")
+            )
+            strHp = read(ss, whitelist="0123456789")
+            if len(strHp) < 1:
+                strHp = pytesseract.image_to_string(ss,
+                                config="--psm 10 -c tessedit_char_whitelist=0123456789")
+            try:
+                return int(strHp)
+            except:
+                x += self.screen['height'] * playerHeightMod
+        return 0
 
     # main function: reads data from in-game screenshot
     def refresh(self):
@@ -159,7 +210,10 @@ class ScreenInterpreter(Acquirer):
         return self.fetchGold()
 
     def getXpToLevelUp(self):
-        return 0
+        self.refresh()
+        return self.fetchXpToLevelUp()
+        # return 0
 
     def getHp(self):
-        return 0
+        self.refresh()
+        return self.fetchHp()
