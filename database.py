@@ -10,6 +10,15 @@ def request():
         json.dump(r.json(), f)
 
 
+def requiredXp():
+
+    data = {}
+    with open("resources/base_values.json", "r") as f:
+        for lvl, required in json.load(f)["requiredXp"].items():
+            data[int(lvl)] = required
+    return data
+
+
 class DDragon:
 
     champions = []

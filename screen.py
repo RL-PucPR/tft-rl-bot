@@ -6,6 +6,7 @@ import pytesseract      # Image interpreter
 import pyautogui        # Screen manipulation
 import time
 from acquirer import Acquirer
+from database import requiredXp
 
 
 def read(img, blacklist=".,", whitelist=None):
@@ -36,7 +37,7 @@ class ScreenInterpreter(Acquirer):
     # ScreenInterpreter will only work with the game running in fullscreen
 
     # constructor
-    def __init__(self, maxTime=0.5):
+    def __init__(self, maxTime=2):
         super().__init__()
         pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
         # track relevant data on the frame
@@ -46,10 +47,19 @@ class ScreenInterpreter(Acquirer):
             "height": h,
         }
         self.screenshot = {
-            "screenshot": pyautogui.screenshot(),
+            "screenshot": pyautogui.screenshot("tmp/in.png"),
             "timestamp": 0,
         }
         self.maxTime = maxTime
+        self.store = [None] * 5
+        self.level = 1
+        self.gold = 0
+        self.xp = {
+            "actual": 0,
+            "required": 0,
+        }
+        self.hp = 100
+        self.requiredXp = requiredXp()
 
     def fetchStore(self):
         # run tesseract to locate text
@@ -60,7 +70,6 @@ class ScreenInterpreter(Acquirer):
         nameWidthMod = 140/1920
         storeWidthMod = 201/1920
         x = self.screen['width']*leftWidthMod
-        store = [None] * 5
         for i in range(5):
             name = read(
                 cropAndEdit(
@@ -71,9 +80,8 @@ class ScreenInterpreter(Acquirer):
                     self.screen['height'] * lowerHeightMod
                 )
             ).replace("\x0c", "").replace("\n", "").replace(" ", "")
-            store[i] = name if name != "" else None
+            self.store[i] = name if name != "" else None
             x += self.screen['width'] * storeWidthMod
-        return store
 
     def fetchLevel(self):
         # see  level
@@ -100,9 +108,9 @@ class ScreenInterpreter(Acquirer):
             strLevel = pytesseract.image_to_string(ss,
                             config="--psm 10 -c tessedit_char_whitelist=0123456789")
         try:
-            return int(strLevel)
+            self.level = int(strLevel)
         except:
-            return 0
+            return
 
     def fetchGold(self):
         # see gold
@@ -129,18 +137,24 @@ class ScreenInterpreter(Acquirer):
             strGold = pytesseract.image_to_string(ss,
                             config="--psm 10 -c tessedit_char_whitelist=0123456789")
         try:
-            return int(strGold)
+            self.gold = int(strGold)
         except:
-            return 0
+            self.gold = 0
 
-    def fetchXpToLevelUp(self):
+    def fetchXp(self):
         # run tesseract to locate text
         # recognize champs in store
         upperHeightMod = 882/1080
         lowerHeightMod = 908/1080
-        leftWidthMod = 406/1920
-        rightWidthMod = 447/1920
-        xp = read(
+        if self.requiredXp[self.level] < 10:
+            leftWidthMod = 410/1920
+            rightWidthMod = 432/1920
+        else:
+            leftWidthMod = 405/1920
+            rightWidthMod = 425/1920
+        thresh = 150
+        fn = lambda x: 255 if x > thresh else 0
+        ss = (
             cropAndEdit(
                 self.screenshot["screenshot"],
                 self.screen['width'] * leftWidthMod,
@@ -148,9 +162,20 @@ class ScreenInterpreter(Acquirer):
                 self.screen['width'] * rightWidthMod,
                 self.screen['height'] * lowerHeightMod
             )
-        ).replace("\x0c", "").replace("\n", "").replace(" ", "")
-        actualXp, requiredXp = xp.split("/") if xp != "" else 0, 0
-        return int(requiredXp) - int(actualXp)
+            .resize((200, 200), Image.ANTIALIAS)
+            .convert("L")
+            .point(fn, mode="1")
+        )
+        strXp = read(ss, whitelist="0123456789")
+        if len(strXp) < 1:
+            strXp = pytesseract.image_to_string(ss,
+                            config="--psm 10 -c tessedit_char_whitelist=0123456789")
+        try:
+            self.xp["actual"] = int(strXp)
+            if self.xp["actual"] >= self.xp["required"]:
+                self.xp["actual"] = 0
+        except:
+            self.xp["actual"] = 0
 
     def fetchHp(self):
         upperHeightMod = 207/1080
@@ -179,10 +204,14 @@ class ScreenInterpreter(Acquirer):
                 strHp = pytesseract.image_to_string(ss,
                                 config="--psm 10 -c tessedit_char_whitelist=0123456789")
             try:
-                return int(strHp)
+                intHp = int(strHp)
+                if intHp <= 100:
+                    self.hp = intHp
+                    return
             except:
-                x += self.screen['height'] * playerHeightMod
-        return 0
+                pass
+            x += self.screen['height'] * playerHeightMod
+        self.hp = 0
 
     # main function: reads data from in-game screenshot
     def refresh(self):
@@ -193,27 +222,31 @@ class ScreenInterpreter(Acquirer):
         now = time.time()
         if now - self.screenshot["timestamp"] > self.maxTime:
             self.screenshot = {
-                "screenshot": pyautogui.screenshot(),
+                "screenshot": pyautogui.screenshot("tmp/in.png"),
                 "timestamp": now,
             }
+            self.fetchStore()
+            self.fetchLevel()
+            self.fetchGold()
+            self.fetchXp()
+            self.fetchHp()
 
     def getStore(self):
         self.refresh()
-        return self.fetchStore()
+        return self.store
 
     def getLevel(self):
         self.refresh()
-        return self.fetchLevel()
+        return self.level
 
     def getGold(self):
         self.refresh()
-        return self.fetchGold()
+        return self.gold
 
     def getXpToLevelUp(self):
         self.refresh()
-        # return self.fetchXpToLevelUp()
-        return 0
+        return self.xp["required"] - self.xp["actual"]
 
     def getHp(self):
         self.refresh()
-        return self.fetchHp()
+        return self.hp
