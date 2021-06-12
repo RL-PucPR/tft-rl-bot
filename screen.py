@@ -257,6 +257,70 @@ class ScreenInterpreter(Acquirer):
         return self.hp
 
     # Setters
+    def buyChampion(self, position):
+        baseWidth = 575
+        height = 995
+        modifier = 200
+        pyautogui.click(baseWidth+modifier*position, height, 1, self.mouseSpeed)
+
+    def toBench(self, action, position):
+        baseWidth = 425
+        height = 777
+        modifier = 118
+        action(baseWidth+modifier*position, height, self.mouseSpeed)
+
+    def toBoard(self, action, position):
+        if position[0] == 0:
+            baseWidth = 575
+            height = 675
+            modifier = 130
+        elif position[0] == 1:
+            baseWidth = 530
+            height = 590
+            modifier = 125
+        elif position[0] == 2:
+            baseWidth = 605
+            height = 510
+            modifier = 120
+        elif position[0] == 3:
+            baseWidth = 560
+            height = 440
+            modifier = 115
+        else:
+            return
+
+        action(baseWidth+modifier*position[1], height, self.mouseSpeed)
+
+    def moveFromBenchToBoard(self, start, end):
+        self.toBench(pyautogui.moveTo, start)
+        self.toBoard(pyautogui.dragTo, end)
+
+    def moveFromBoardToBench(self, start, end):
+        self.toBoard(pyautogui.moveTo, start)
+        self.toBench(pyautogui.dragTo, end)
+
+    def moveInBench(self, start, end):
+        self.toBench(pyautogui.moveTo, start)
+        self.toBench(pyautogui.dragTo, end)
+
+    def moveInBoard(self, start, end):
+        self.toBoard(pyautogui.moveTo, start)
+        self.toBoard(pyautogui.dragTo, end)
+
+    def sellFromBench(self, position):
+        self.toBench(pyautogui.moveTo, position)
+        if self.useKeyboard:
+            pyautogui.press("e")
+        else:
+            pyautogui.dragTo(900, 1000, self.mouseSpeed)
+
+    def sellFromBoard(self, position):
+        self.toBoard(pyautogui.moveTo, position)
+        if self.useKeyboard:
+            pyautogui.press("e")
+        else:
+            pyautogui.dragTo(900, 1000, self.mouseSpeed)
+
     def buyExp(self):
         if self.useKeyboard:
             pyautogui.press("f")
@@ -269,34 +333,4 @@ class ScreenInterpreter(Acquirer):
         else:
             pyautogui.click(360, 1030, self.mouseSpeed)
 
-    def buyChampion(self, position):
-        baseWidth = 375
-        height = 995
-        modifier = 200
-        pyautogui.click(baseWidth+modifier*position, height, self.mouseSpeed)
-
-    def toBench(self, action, position):
-        baseWidth = 307
-        height = 777
-        modifier = 118
-        action(baseWidth+modifier*position, height, self.mouseSpeed)
-
-    def toBoard(self, action, position):
-        # TODO - values for board not currently set
-        # These values are for the lowes line from the board
-        baseWidth = 575
-        height = 675
-        modifier = 130
-        action(baseWidth+modifier*position, height, self.mouseSpeed)
-
-    def sellFromBench(self, position):
-        self.toBench(pyautogui.moveTo, position)
-        if self.useKeyboard:
-            pyautogui.press("e")
-        else:
-            pyautogui.dragTo(900, 1000, self.mouseSpeed)
-
-    def moveInBench(self, start, end):
-        self.toBench(pyautogui.moveTo, start)
-        self.toBench(pyautogui.dragTo, end)
 

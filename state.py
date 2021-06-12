@@ -70,9 +70,11 @@ class Setters:
 
     def moveFromBenchToBoard(self, start, end):
         print("MOVING FROM "+str(start)+" to "+str(end))
+        self.acquirer.moveFromBenchToBoard(start, end)
 
     def moveFromBoardToBench(self, start, end):
         print("MOVING FROM "+str(start)+" to "+str(end))
+        self.acquirer.moveFromBoardToBench(start, end)
 
     def moveInBench(self, start, end):
         print("MOVING FROM "+str(start)+" to "+str(end))
@@ -80,13 +82,15 @@ class Setters:
 
     def moveInBoard(self, start, end):
         print("MOVING FROM "+str(start)+" to "+str(end))
+        self.acquirer.moveInBoard(start, end)
 
     def sellFromBench(self, position):
         print("SELLING "+str(position))
-        self.acquirer.sellFromBench()
+        self.acquirer.sellFromBench(position)
 
     def sellFromBoard(self, position):
         print("SELLING "+str(position))
+        self.acquirer.sellFromBoard(position)
 
     def buyExp(self):
         print("BUYING EXP")

@@ -6,7 +6,7 @@ from time import sleep
 
 
 def testReader():
-    gs = GameState(ScreenInterpreter())
+    gs = GameState(ScreenInterpreter(speed=2))
     player = Player(gs)
     while True:
         gs.update()
