@@ -60,6 +60,9 @@ class Player:
         for i in range(self.state.getXpToLevelUp()//4):
             self.state.buyExp()
 
+    def refreshStore(self):
+        self.state.refreshStore()
+
     def wait(self):
         self.state.wait()
 
@@ -83,6 +86,7 @@ class Player:
             self.randomMove,
             self.randomSell,
             self.levelUp,
+            self.refreshStore,
             self.wait,
         ]
 

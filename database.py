@@ -10,11 +10,11 @@ def request():
         json.dump(r.json(), f)
 
 
-def requiredXp():
+def requiredExp():
 
     data = {}
     with open("resources/base_values.json", "r") as f:
-        for lvl, required in json.load(f)["requiredXp"].items():
+        for lvl, required in json.load(f)["requiredExp"].items():
             data[int(lvl)] = required
     return data
 

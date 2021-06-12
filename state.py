@@ -76,18 +76,25 @@ class Setters:
 
     def moveInBench(self, start, end):
         print("MOVING FROM "+str(start)+" to "+str(end))
+        self.acquirer.moveInBench(start, end)
 
     def moveInBoard(self, start, end):
         print("MOVING FROM "+str(start)+" to "+str(end))
 
     def sellFromBench(self, position):
         print("SELLING "+str(position))
+        self.acquirer.sellFromBench()
 
     def sellFromBoard(self, position):
         print("SELLING "+str(position))
 
     def buyExp(self):
         print("BUYING EXP")
+        self.acquirer.buyExp()
+
+    def refreshStore(self):
+        print("REFRESHING STORE")
+        self.acquirer.refreshStore()
 
     def wait(self):
         print("WAITING")

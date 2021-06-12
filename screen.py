@@ -6,7 +6,7 @@ import pytesseract      # Image interpreter
 import pyautogui        # Screen manipulation
 import time
 from acquirer import Acquirer
-from database import requiredXp
+from database import requiredExp
 
 
 def read(img, blacklist=".,", whitelist=None):
@@ -37,7 +37,7 @@ class ScreenInterpreter(Acquirer):
     # ScreenInterpreter will only work with the game running in fullscreen
 
     # constructor
-    def __init__(self, maxTime=2):
+    def __init__(self, maxTime=2, keyboard=False, speed=0.1):
         super().__init__()
         pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
         # track relevant data on the frame
@@ -59,8 +59,11 @@ class ScreenInterpreter(Acquirer):
             "required": 0,
         }
         self.hp = 100
-        self.requiredXp = requiredXp()
+        self.requiredExp = requiredExp()
+        self.useKeyboard = keyboard
+        self.mouseSpeed = speed
 
+    # Internal functions - called by refresh
     def fetchStore(self):
         # run tesseract to locate text
         # recognize champs in store
@@ -141,12 +144,12 @@ class ScreenInterpreter(Acquirer):
         except:
             self.gold = 0
 
-    def fetchXp(self):
+    def fetchExp(self):
         # run tesseract to locate text
         # recognize champs in store
         upperHeightMod = 882/1080
         lowerHeightMod = 908/1080
-        if self.requiredXp[self.level] < 10:
+        if self.requiredExp[self.level] < 10:
             leftWidthMod = 410/1920
             rightWidthMod = 432/1920
         else:
@@ -166,12 +169,12 @@ class ScreenInterpreter(Acquirer):
             .convert("L")
             .point(fn, mode="1")
         )
-        strXp = read(ss, whitelist="0123456789")
-        if len(strXp) < 1:
-            strXp = pytesseract.image_to_string(ss,
+        strExp = read(ss, whitelist="0123456789")
+        if len(strExp) < 1:
+            strExp = pytesseract.image_to_string(ss,
                             config="--psm 10 -c tessedit_char_whitelist=0123456789")
         try:
-            self.xp["actual"] = int(strXp)
+            self.xp["actual"] = int(strExp)
             if self.xp["actual"] >= self.xp["required"]:
                 self.xp["actual"] = 0
         except:
@@ -228,9 +231,11 @@ class ScreenInterpreter(Acquirer):
             self.fetchStore()
             self.fetchLevel()
             self.fetchGold()
-            self.fetchXp()
+            self.fetchExp()
             self.fetchHp()
 
+    # Functions to be called by GameState
+    # Getters
     def getStore(self):
         self.refresh()
         return self.store
@@ -243,10 +248,55 @@ class ScreenInterpreter(Acquirer):
         self.refresh()
         return self.gold
 
-    def getXpToLevelUp(self):
+    def getExpToLevelUp(self):
         self.refresh()
         return self.xp["required"] - self.xp["actual"]
 
     def getHp(self):
         self.refresh()
         return self.hp
+
+    # Setters
+    def buyExp(self):
+        if self.useKeyboard:
+            pyautogui.press("f")
+        else:
+            pyautogui.click(370, 960, self.mouseSpeed)
+
+    def refreshStore(self):
+        if self.useKeyboard:
+            pyautogui.press("d")
+        else:
+            pyautogui.click(360, 1030, self.mouseSpeed)
+
+    def buyChampion(self, position):
+        baseWidth = 375
+        height = 995
+        modifier = 200
+        pyautogui.click(baseWidth+modifier*position, height, self.mouseSpeed)
+
+    def toBench(self, action, position):
+        baseWidth = 307
+        height = 777
+        modifier = 118
+        action(baseWidth+modifier*position, height, self.mouseSpeed)
+
+    def toBoard(self, action, position):
+        # TODO - values for board not currently set
+        # These values are for the lowes line from the board
+        baseWidth = 575
+        height = 675
+        modifier = 130
+        action(baseWidth+modifier*position, height, self.mouseSpeed)
+
+    def sellFromBench(self, position):
+        self.toBench(pyautogui.moveTo, position)
+        if self.useKeyboard:
+            pyautogui.press("e")
+        else:
+            pyautogui.dragTo(900, 1000, self.mouseSpeed)
+
+    def moveInBench(self, start, end):
+        self.toBench(pyautogui.moveTo, start)
+        self.toBench(pyautogui.dragTo, end)
+
