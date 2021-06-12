@@ -8,7 +8,7 @@ class Player:
     def buyChampion(self, position=None):
         # If no position was given, choose a random number between 1 and 5
         if position is None:
-            position = random.choice(range(5)) + 1
+            position = random.choice(range(5))
         self.state.buyChampion(position)
 
     def moveFromBenchToBoard(self, start=None, end=None):

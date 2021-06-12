@@ -6,17 +6,18 @@ from time import sleep
 
 
 def testReader():
-    gs = GameState(ScreenInterpreter(speed=2))
+    sleep(1)
+    gs = GameState(ScreenInterpreter(speed=0.2))
     player = Player(gs)
     while True:
-        gs.update()
-        print("Gold: ", gs.getGold())
-        print("Level: ", gs.getLevel())
-        print("Store: ", gs.getStore())
-        print("xp: ", gs.getXpToLevelUp())
-        print("Hp: ", gs.getHp())
+        # gs.update()
+        # print("Gold: ", gs.getGold())
+        # print("Level: ", gs.getLevel())
+        # print("Store: ", gs.getStore())
+        # print("xp: ", gs.getXpToLevelUp())
+        # print("Hp: ", gs.getHp())
         player.randomAction()
-        sleep(1)
+        sleep(0.1)
 
 
 def testTrainer():

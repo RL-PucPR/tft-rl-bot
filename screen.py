@@ -33,6 +33,12 @@ def cropAndEdit(img, x1, y1, x2, y2):
     return img1
 
 
+def leftClick(delay=0.1):
+    pyautogui.mouseDown()
+    time.sleep(delay)
+    pyautogui.mouseUp()
+
+
 class ScreenInterpreter(Acquirer):
     # ScreenInterpreter will only work with the game running in fullscreen
 
@@ -228,32 +234,32 @@ class ScreenInterpreter(Acquirer):
                 "screenshot": pyautogui.screenshot("tmp/in.png"),
                 "timestamp": now,
             }
-            self.fetchStore()
-            self.fetchLevel()
-            self.fetchGold()
-            self.fetchExp()
-            self.fetchHp()
 
     # Functions to be called by GameState
     # Getters
     def getStore(self):
         self.refresh()
+        self.fetchStore()
         return self.store
 
     def getLevel(self):
         self.refresh()
+        self.fetchLevel()
         return self.level
 
     def getGold(self):
         self.refresh()
+        self.fetchGold()
         return self.gold
 
     def getExpToLevelUp(self):
         self.refresh()
+        self.fetchExp()
         return self.xp["required"] - self.xp["actual"]
 
     def getHp(self):
         self.refresh()
+        self.fetchHp()
         return self.hp
 
     # Setters
@@ -261,13 +267,14 @@ class ScreenInterpreter(Acquirer):
         baseWidth = 575
         height = 995
         modifier = 200
-        pyautogui.click(baseWidth+modifier*position, height, 1, self.mouseSpeed)
+        pyautogui.moveTo(baseWidth+modifier*position, height, duration=self.mouseSpeed)
+        leftClick()
 
     def toBench(self, action, position):
         baseWidth = 425
         height = 777
         modifier = 118
-        action(baseWidth+modifier*position, height, self.mouseSpeed)
+        action(baseWidth+modifier*position, height, duration=self.mouseSpeed)
 
     def toBoard(self, action, position):
         if position[0] == 0:
@@ -289,7 +296,7 @@ class ScreenInterpreter(Acquirer):
         else:
             return
 
-        action(baseWidth+modifier*position[1], height, self.mouseSpeed)
+        action(baseWidth+modifier*position[1], height, duration=self.mouseSpeed)
 
     def moveFromBenchToBoard(self, start, end):
         self.toBench(pyautogui.moveTo, start)
@@ -312,25 +319,28 @@ class ScreenInterpreter(Acquirer):
         if self.useKeyboard:
             pyautogui.press("e")
         else:
-            pyautogui.dragTo(900, 1000, self.mouseSpeed)
+            pyautogui.dragTo(900, 1000, duration=self.mouseSpeed)
 
     def sellFromBoard(self, position):
         self.toBoard(pyautogui.moveTo, position)
         if self.useKeyboard:
             pyautogui.press("e")
         else:
-            pyautogui.dragTo(900, 1000, self.mouseSpeed)
+            pyautogui.dragTo(900, 1000, duration=self.mouseSpeed)
 
     def buyExp(self):
         if self.useKeyboard:
             pyautogui.press("f")
         else:
-            pyautogui.click(370, 960, self.mouseSpeed)
+            pyautogui.moveTo(370, 960, duration=self.mouseSpeed)
+            leftClick()
 
     def refreshStore(self):
         if self.useKeyboard:
             pyautogui.press("d")
         else:
-            pyautogui.click(360, 1030, self.mouseSpeed)
+            pyautogui.moveTo(360, 1030, duration=self.mouseSpeed)
+            leftClick()
+
 
 
