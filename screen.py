@@ -15,7 +15,7 @@ def read(img, blacklist=".,", whitelist=None):
     """
     if whitelist:
         return pytesseract.image_to_string(
-            img, config="-c tessedit_char_whitelist=" + whitelist
+            img, config="--psm 6 -c tessedit_char_whitelist=" + whitelist
         )
     else:
         return pytesseract.image_to_string(
@@ -113,9 +113,6 @@ class ScreenInterpreter(Acquirer):
             .point(fn, mode="1")
         )
         strLevel = read(ss, whitelist="0123456789")
-        if len(strLevel) < 1:
-            strLevel = pytesseract.image_to_string(ss,
-                            config="--psm 10 -c tessedit_char_whitelist=0123456789")
         try:
             self.level = int(strLevel)
         except:
@@ -142,9 +139,6 @@ class ScreenInterpreter(Acquirer):
             .point(fn, mode="1")
         )
         strGold = read(ss, whitelist="0123456789")
-        if len(strGold) < 1:
-            strGold = pytesseract.image_to_string(ss,
-                            config="--psm 10 -c tessedit_char_whitelist=0123456789")
         try:
             self.gold = int(strGold)
         except:
@@ -176,9 +170,6 @@ class ScreenInterpreter(Acquirer):
             .point(fn, mode="1")
         )
         strExp = read(ss, whitelist="0123456789")
-        if len(strExp) < 1:
-            strExp = pytesseract.image_to_string(ss,
-                            config="--psm 10 -c tessedit_char_whitelist=0123456789")
         try:
             self.xp["actual"] = int(strExp)
             if self.xp["actual"] >= self.xp["required"]:
@@ -209,9 +200,6 @@ class ScreenInterpreter(Acquirer):
                 .point(fn, mode="1")
             )
             strHp = read(ss, whitelist="0123456789")
-            if len(strHp) < 1:
-                strHp = pytesseract.image_to_string(ss,
-                                config="--psm 10 -c tessedit_char_whitelist=0123456789")
             try:
                 intHp = int(strHp)
                 if intHp <= 100:

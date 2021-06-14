@@ -9,15 +9,21 @@ def testReader():
     sleep(1)
     gs = GameState(ScreenInterpreter(speed=0.2))
     player = Player(gs)
+    count = 0
     while True:
-        # gs.update()
+        if count % 10 == 0:
+            gs.update()
+            print(count)
+            print(gs.data)
+            print("/n=======================================/n")
         # print("Gold: ", gs.getGold())
         # print("Level: ", gs.getLevel())
         # print("Store: ", gs.getStore())
         # print("xp: ", gs.getXpToLevelUp())
         # print("Hp: ", gs.getHp())
         player.randomAction()
-        sleep(0.1)
+        count += 1
+    #     sleep(1)
 
 
 def testTrainer():
