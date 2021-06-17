@@ -33,3 +33,5 @@ sudo apt-get install libtesseract-dev
 ```bash
 brew install tesseract
 ```
+
+https://github.com/hill-a/stable-baselines

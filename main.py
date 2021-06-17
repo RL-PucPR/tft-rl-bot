@@ -3,6 +3,12 @@ from screen import ScreenInterpreter
 from state import GameState
 from player import Player
 from time import sleep
+from database import DDragon
+from tft_bot.envs.game_state_env import GameStateEnv
+from stable_baselines.common.policies import MlpPolicy
+from stable_baselines.common import make_vec_env
+from stable_baselines import A2C
+from stable_baselines.common.env_checker import check_env
 
 
 def testReader():
@@ -30,7 +36,27 @@ def testTrainer():
         shop = c.refreshShop(shop, i + 1)
 
 
+def testEnv():
+    env = GameStateEnv(ScreenInterpreter(maxTime=0, speed=0.2), DDragon())
+    # It will check your custom environment and output additional warnings if needed
+    check_env(env)
+
+    # model = A2C(MlpPolicy, env, verbose=1)
+    # model.learn(total_timesteps=25000)
+    # model.save("a2c_cartpole")
+    #
+    # del model # remove to demonstrate saving and loading
+    #
+    # model = A2C.load("a2c_cartpole")
+    #
+    # obs = env.reset()
+    # while True:
+    #     action, _states = model.predict(obs)
+    #     obs, rewards, dones, info = env.step(action)
+    #     env.render()
+
 if __name__ == '__main__':
     # testTrainer()
-    testReader()
+    # testReader()
     # testPlayer()
+    testEnv()

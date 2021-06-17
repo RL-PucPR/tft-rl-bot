@@ -39,7 +39,7 @@ def leftClick(delay=0.1):
     pyautogui.mouseUp()
 
 
-class ScreenInterpreter(Acquirer):
+class ScreenInterpreter:
     # ScreenInterpreter will only work with the game running in fullscreen
 
     # constructor
@@ -64,10 +64,19 @@ class ScreenInterpreter(Acquirer):
             "actual": 0,
             "required": 0,
         }
-        self.hp = 100
+        self.hpList = [100] * 8
+        self.position = 7
+        self.done = False
         self.requiredExp = requiredExp()
         self.useKeyboard = keyboard
         self.mouseSpeed = speed
+        self.fetchFunctions = [
+            self.fetchStore,
+            self.fetchLevel,
+            self.fetchGold,
+            self.fetchExp,
+            self.fetchHp,
+        ]
 
     # Internal functions - called by refresh
     def fetchStore(self):
@@ -119,7 +128,7 @@ class ScreenInterpreter(Acquirer):
         try:
             self.level = int(strLevel)
         except:
-            return
+            pass
 
     def fetchGold(self):
         # see gold
@@ -148,7 +157,36 @@ class ScreenInterpreter(Acquirer):
         try:
             self.gold = int(strGold)
         except:
-            self.gold = 0
+            pass
+
+    def fetchTimer(self):
+        # see timer
+        upperHeightMod = 10/1080
+        lowerHeightMod = 32/1080
+        leftWidthMod = 1142/1920
+        rightWidthMod = 1172/1920
+        thresh = 150
+        fn = lambda x: 255 if x > thresh else 0
+        ss = (
+            cropAndEdit(
+                self.screenshot["screenshot"],
+                self.screen['width'] * leftWidthMod,
+                self.screen['height'] * upperHeightMod,
+                self.screen['width'] * rightWidthMod,
+                self.screen['height'] * lowerHeightMod
+            )
+            .resize((200, 200), Image.ANTIALIAS)
+            .convert("L")
+            .point(fn, mode="1")
+        )
+        strTimer = read(ss, whitelist="0123456789")
+        if len(strTimer) < 1:
+            strTimer = pytesseract.image_to_string(ss,
+                            config="--psm 10 -c tessedit_char_whitelist=0123456789")
+        try:
+            return int(strTimer)
+        except:
+            return 0
 
     def fetchExp(self):
         # run tesseract to locate text
@@ -184,24 +222,27 @@ class ScreenInterpreter(Acquirer):
             if self.xp["actual"] >= self.xp["required"]:
                 self.xp["actual"] = 0
         except:
-            self.xp["actual"] = 0
+            pass
 
     def fetchHp(self):
         upperHeightMod = 207/1080
         leftWidthMod = 1775/1920
         rightWidthMod = 1827/1920
+        oppLeftWidthMod = 1823/1920
+        oppRightWidthMod = 1847/1920
         hpHeightMod = 35/1080
         playerHeightMod = 72/1080
         x = self.screen['height'] * upperHeightMod
         thresh = 150
         fn = lambda a: 255 if a > thresh else 0
         for i in range(8):
+            # Check for opponent's hp
             ss = (
                 cropAndEdit(
                     self.screenshot["screenshot"],
-                    self.screen['width'] * leftWidthMod,
+                    self.screen['width'] * oppLeftWidthMod,
                     x,
-                    self.screen['width'] * rightWidthMod,
+                    self.screen['width'] * oppRightWidthMod,
                     x + self.screen['height'] * hpHeightMod
                 )
                 .resize((200, 200), Image.ANTIALIAS)
@@ -215,12 +256,40 @@ class ScreenInterpreter(Acquirer):
             try:
                 intHp = int(strHp)
                 if intHp <= 100:
-                    self.hp = intHp
-                    return
+                    self.hpList[i] = intHp
+                    if intHp == 0 and self.position < i:
+                        if self.position == 0 and self.position == i-1:
+                            self.done = True
+                        return
             except:
-                pass
+                # If no number was found, check for your hp
+                ss = (
+                    cropAndEdit(
+                        self.screenshot["screenshot"],
+                        self.screen['width'] * leftWidthMod,
+                        x,
+                        self.screen['width'] * rightWidthMod,
+                        x + self.screen['height'] * hpHeightMod
+                    )
+                        .resize((200, 200), Image.ANTIALIAS)
+                        .convert("L")
+                        .point(fn, mode="1")
+                )
+                strHp = read(ss, whitelist="0123456789")
+                if len(strHp) < 1:
+                    strHp = pytesseract.image_to_string(ss,
+                                                        config="--psm 10 -c tessedit_char_whitelist=0123456789")
+                try:
+                    intHp = int(strHp)
+                    if intHp <= 100:
+                        self.hpList[i] = intHp
+                        self.position = i
+                        if intHp == 0:
+                            self.done = True
+                            return
+                except:
+                    pass
             x += self.screen['height'] * playerHeightMod
-        self.hp = 0
 
     # main function: reads data from in-game screenshot
     def refresh(self):
@@ -260,10 +329,24 @@ class ScreenInterpreter(Acquirer):
     def getHp(self):
         self.refresh()
         self.fetchHp()
-        return self.hp
+        return self.hp[self.position], self.position
+
+    def get_observation(self):
+        self.refresh()
+        for fetch in self.fetchFunctions:
+            fetch()
+        return {
+            "store": self.store,
+            "gold": self.gold,
+            "level": self.level,
+            "xp": self.xp["actual"],
+            "hp": self.hpList[self.position],
+            "position": self.position,
+            "done": self.done
+        }
 
     # Setters
-    def buyChampion(self, position):
+    def buy_champion(self, position):
         baseWidth = 575
         height = 995
         modifier = 200
@@ -298,49 +381,66 @@ class ScreenInterpreter(Acquirer):
 
         action(baseWidth+modifier*position[1], height, duration=self.mouseSpeed)
 
-    def moveFromBenchToBoard(self, start, end):
+    def move_from_bench_to_board(self, start, end):
         self.toBench(pyautogui.moveTo, start)
         self.toBoard(pyautogui.dragTo, end)
 
-    def moveFromBoardToBench(self, start, end):
+    def move_from_board_to_bench(self, start, end):
         self.toBoard(pyautogui.moveTo, start)
         self.toBench(pyautogui.dragTo, end)
 
-    def moveInBench(self, start, end):
+    def move_in_bench(self, start, end):
         self.toBench(pyautogui.moveTo, start)
         self.toBench(pyautogui.dragTo, end)
 
-    def moveInBoard(self, start, end):
+    def move_in_board(self, start, end):
         self.toBoard(pyautogui.moveTo, start)
         self.toBoard(pyautogui.dragTo, end)
 
-    def sellFromBench(self, position):
+    def sell_from_bench(self, position):
         self.toBench(pyautogui.moveTo, position)
         if self.useKeyboard:
             pyautogui.press("e")
         else:
             pyautogui.dragTo(900, 1000, duration=self.mouseSpeed)
 
-    def sellFromBoard(self, position):
+    def sell_from_board(self, position):
         self.toBoard(pyautogui.moveTo, position)
         if self.useKeyboard:
             pyautogui.press("e")
         else:
             pyautogui.dragTo(900, 1000, duration=self.mouseSpeed)
 
-    def buyExp(self):
+    def buy_exp(self):
         if self.useKeyboard:
             pyautogui.press("f")
         else:
             pyautogui.moveTo(370, 960, duration=self.mouseSpeed)
             leftClick()
 
-    def refreshStore(self):
+    def refresh_store(self):
         if self.useKeyboard:
             pyautogui.press("d")
         else:
             pyautogui.moveTo(360, 1030, duration=self.mouseSpeed)
             leftClick()
+
+    def clear_board(self):
+        initial_mouse_speed = self.mouseSpeed
+        self.mouseSpeed = 0.1
+
+        # Sell all from bench
+        for i in range(9):
+            self.sell_from_bench(i)
+        # Sell all from board
+        for i in range(4):
+            for j in range(7):
+                self.sell_from_board([i, j])
+
+        self.mouseSpeed = initial_mouse_speed
+
+    def wait(self):
+        time.sleep(self.fetchTimer())
 
 
 

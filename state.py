@@ -1,64 +1,8 @@
 import random
 import time
-
-
-class Getters:
-    acquirer = None
-    data = {
-        "champions": [],
-        "bench": [None] * 9,
-        "board": [[None] * 7] * 3,
-        "store": [None] * 5,
-        "gold": 0,
-        "level": 1,
-        "xpToLevelUp": 0,
-        "hp": 0,
-    }
-
-    def getGold(self):
-        """
-        Returns current gold count (use after retrieval).
-        """
-        return self.data["gold"]
-
-    def getLevel(self):
-        """
-        Returns current gold count (use after retrieval).
-        """
-        return self.data["level"]
-
-    def getStore(self):
-        """
-        Returns array containing champions found in store (use after retrieval).
-        """
-        return self.data["store"]
-
-    def getXpToLevelUp(self):
-        """
-        Returns the ammount of xp missing for the player to level up (use after retrieval).
-        """
-        return self.data["xpToLevelUp"]
-
-    def getHp(self):
-        """
-        Returns current value for the player's hp (use after retrieval).
-        """
-        return self.data["hp"]
-
-    def randomBenchPosition(self):
-        return random.choice(range(len(self.data["bench"])))
-
-    def randomBoardPosition(self):
-        xAxis = random.choice(range(len(self.data["board"])))
-        yAxis = random.choice(range(len(self.data["board"][xAxis])))
-        return xAxis, yAxis
-
-    def update(self):
-        self.data["gold"] = self.acquirer.getGold()
-        self.data["level"] = self.acquirer.getLevel()
-        self.data["store"] = self.acquirer.getStore()
-        self.data["xpToLevelUp"] = self.acquirer.getXpToLevelUp()
-        self.data["hp"] = self.acquirer.getHp()
+import gym
+import numpy as np
+from gym import spaces
 
 
 class Setters:
@@ -105,30 +49,63 @@ class Setters:
         time.sleep(1)
 
 
-class GameState(Getters, Setters):
+class GameState(gym.Env, Setters):
+    acquirer = None
     # champion format
     # {
     #     "name": "Vayne",
     #     "star": 2,
     #     "quantity": 1,
     # }
-    data = {
-        "champions": [],
-        "bench": [None] * 9,
-        "board": [[None] * 7] * 3,
-        "store": [None] * 5,
-        "gold": 0,
-        "level": 1,
-        "xpToLevelUp": 0,
-        "hp": 0,
-    }
+    champions = []
+    bench = [None] * 9
+    board = [[None] * 7] * 3
+    store = [None] * 5
+    gold = 0
+    level = 1
+    xpToLevelUp = 0
+    hp = 100
+    position = 8
+    winner = False
 
-    def apply(self, func, *args, **kwargs):
-        # TODO - I want to do some actions in gamestate (like buying from the store)
-        self.acquirer.func(args, kwargs)
-        self.update()
+    def randomBenchPosition(self):
+        return random.choice(range(len(self.bench)))
+
+    def randomBoardPosition(self):
+        xAxis = random.choice(range(len(self.board)))
+        yAxis = random.choice(range(len(self.board[xAxis])))
+        return xAxis, yAxis
+
+    def update(self):
+        self.gold = self.acquirer.getGold()
+        self.level = self.acquirer.getLevel()
+        self.store = self.acquirer.getStore()
+        self.xpToLevelUp = self.acquirer.getXpToLevelUp()
+        self.hp, self.position = self.acquirer.getHp()
 
     def __init__(self, acquirer):
+        super(GameState, self).__init__()
+
+        # Define action and observation space
+        # They must be gym.spaces objects
+        # Environment will have 12 different actions
+        # Some actions will take two parameters at most
+        # Actions that should not receive parameters that are
+        # run with parameters different from 0 will receive
+        # instant negative reward
+        self.action_space = spaces.Dict({
+            "action": spaces.Discrete(12),
+            "parameters": spaces.Dict({
+                "start": spaces.Discrete(4*7),
+                "end": spaces.Discrete(4*7)
+            })
+        })
+        # Example for using image as input:
+        self.observation_space = spaces.Dict({
+            ""
+        })
         self.acquirer = acquirer
+
+
 
 
