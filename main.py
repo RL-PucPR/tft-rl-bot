@@ -16,12 +16,12 @@ def testReader():
     gs = GameState(ScreenInterpreter(speed=0.2))
     player = Player(gs)
     while True:
-        # gs.update()
-        # print("Gold: ", gs.getGold())
-        # print("Level: ", gs.getLevel())
-        # print("Store: ", gs.getStore())
-        # print("xp: ", gs.getXpToLevelUp())
-        # print("Hp: ", gs.getHp())
+        gs.update()
+        print("Gold: ", gs.getGold())
+        print("Level: ", gs.getLevel())
+        print("Store: ", gs.getStore())
+        print("xp: ", gs.getXpToLevelUp())
+        print("Hp: ", gs.getHp())
         player.randomAction()
         sleep(0.1)
 
@@ -41,22 +41,7 @@ def testEnv():
     # It will check your custom environment and output additional warnings if needed
     check_env(env)
 
-    # model = A2C(MlpPolicy, env, verbose=1)
-    # model.learn(total_timesteps=25000)
-    # model.save("a2c_cartpole")
-    #
-    # del model # remove to demonstrate saving and loading
-    #
-    # model = A2C.load("a2c_cartpole")
-    #
-    # obs = env.reset()
-    # while True:
-    #     action, _states = model.predict(obs)
-    #     obs, rewards, dones, info = env.step(action)
-    #     env.render()
-
 if __name__ == '__main__':
     # testTrainer()
     # testReader()
-    # testPlayer()
     testEnv()
