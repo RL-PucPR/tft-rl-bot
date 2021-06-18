@@ -15,7 +15,7 @@ def read(img, blacklist=".,", whitelist=None):
     """
     if whitelist:
         return pytesseract.image_to_string(
-            img, config="-c tessedit_char_whitelist=" + whitelist
+            img, config="--psm 6 -c tessedit_char_whitelist=" + whitelist
         )
     else:
         return pytesseract.image_to_string(
