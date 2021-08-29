@@ -76,11 +76,15 @@ class GameStateEnv(gym.Env):
     def refresh_store(self, params):
         if params["start"] > 0 or params["end"] > 0:
             return -1
+        if not self.acquirer.can_perform_action():
+            return -1
         self.acquirer.refresh_store()
         return 0
 
     def buy_exp(self, params):
         if params["start"] > 0 or params["end"] > 0:
+            return -1
+        if not self.acquirer.can_perform_action():
             return -1
         self.acquirer.buy_exp()
         return 0
@@ -88,11 +92,15 @@ class GameStateEnv(gym.Env):
     def buy_champion(self, params):
         if params["start"] > 4 or params["end"] > 0:
             return -1
+        if not self.acquirer.can_perform_action():
+            return -1
         self.acquirer.buy_champion(params["start"])
         return 0
 
     def sell_from_bench(self, params):
         if params["start"] > 8 or params["end"] > 0:
+            return -1
+        if not self.acquirer.can_perform_action():
             return -1
         self.acquirer.sell_from_bench(params["start"])
         return 0
@@ -100,11 +108,15 @@ class GameStateEnv(gym.Env):
     def sell_from_board(self, params):
         if params["end"] > 0:
             return -1
+        if not self.acquirer.can_perform_action():
+            return -1
         self.acquirer.sell_from_board(get_board_position(params["start"]))
         return 0
 
     def move_in_bench(self, params):
         if params["start"] > 8 or params["end"] > 8 or params["start"] == params["end"]:
+            return -1
+        if not self.acquirer.can_perform_action():
             return -1
         self.acquirer.move_in_bench(params["start"], params["end"])
         return 0
@@ -112,11 +124,15 @@ class GameStateEnv(gym.Env):
     def move_in_board(self, params):
         if params["start"] == params["end"]:
             return -1
+        if not self.acquirer.can_perform_action():
+            return -1
         self.acquirer.move_in_board(get_board_position(params["start"]), get_board_position(params["end"]))
         return 0
 
     def move_from_bench_to_board(self, params):
         if params["start"] > 8 or params["start"] == params["end"]:
+            return -1
+        if not self.acquirer.can_perform_action():
             return -1
         self.acquirer.move_from_bench_to_board(params["start"], get_board_position(params["end"]))
         return 0
@@ -124,10 +140,12 @@ class GameStateEnv(gym.Env):
     def move_from_board_to_bench(self, params):
         if params["end"] > 8 or params["start"] == params["end"]:
             return -1
+        if not self.acquirer.can_perform_action():
+            return -1
         self.acquirer.move_from_board_to_bench(get_board_position(params["start"]), params["end"])
         return 0
 
-    def get_observation(self, returnDone=False):
+    def get_observation(self, return_done=False):
         state = self.acquirer.get_observation()
 
         store = ()
@@ -150,7 +168,7 @@ class GameStateEnv(gym.Env):
             "hp": state["hp"],
             "position": state["position"],
         }
-        if returnDone:
+        if return_done:
             return observation, state["done"]
         return observation
 

@@ -2,8 +2,8 @@
 
 from PIL import Image
 import PIL.ImageOps
-import pytesseract      # Image interpreter
-import pyautogui        # Screen manipulation
+import pytesseract  # Image interpreter
+import pyautogui  # Screen manipulation
 import time
 from acquirer import Acquirer
 from database import requiredExp
@@ -23,7 +23,7 @@ def read(img, blacklist=".,", whitelist=None):
         )
 
 
-def cropAndEdit(img, x1, y1, x2, y2):
+def crop_and_edit(img, x1, y1, x2, y2):
     """
     Crops, inverts, and desaturates image.
     """
@@ -33,7 +33,7 @@ def cropAndEdit(img, x1, y1, x2, y2):
     return img1
 
 
-def leftClick(delay=0.1):
+def left_click(delay=0.1):
     pyautogui.mouseDown()
     time.sleep(delay)
     pyautogui.mouseUp()
@@ -43,7 +43,7 @@ class ScreenInterpreter:
     # ScreenInterpreter will only work with the game running in fullscreen
 
     # constructor
-    def __init__(self, maxTime=2, keyboard=False, speed=0.1):
+    def __init__(self, max_time=2, keyboard=False, speed=0.1):
         super().__init__()
         pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
         # track relevant data on the frame
@@ -56,7 +56,7 @@ class ScreenInterpreter:
             "screenshot": pyautogui.screenshot("tmp/in.png"),
             "timestamp": 0,
         }
-        self.maxTime = maxTime
+        self.maxTime = max_time
         self.store = [None] * 5
         self.level = 1
         self.gold = 0
@@ -67,229 +67,225 @@ class ScreenInterpreter:
         self.hpList = [100] * 8
         self.position = 7
         self.done = False
+        self.lock = False
         self.requiredExp = requiredExp()
         self.useKeyboard = keyboard
         self.mouseSpeed = speed
         self.fetchFunctions = [
-            self.fetchStore,
-            self.fetchLevel,
-            self.fetchGold,
-            self.fetchExp,
-            self.fetchHp,
+            self.__fetch_store,
+            self.__fetch_level,
+            self.__fetch_gold,
+            self.__fetch_exp,
+            self.__fetch_hp,
         ]
 
     # Internal functions - called by refresh
-    def fetchStore(self):
+    def __fetch_store(self):
         # run tesseract to locate text
         # recognize champs in store
-        upperHeightMod = 1041/1080
-        lowerHeightMod = 1069/1080
-        leftWidthMod = 485/1920
-        nameWidthMod = 140/1920
-        storeWidthMod = 201/1920
-        x = self.screen['width']*leftWidthMod
+        upper_height_mod = 1041 / 1080
+        lower_height_mod = 1069 / 1080
+        left_width_mod = 485 / 1920
+        name_width_mod = 140 / 1920
+        store_width_mod = 201 / 1920
+        x = self.screen['width'] * left_width_mod
         for i in range(5):
             name = read(
-                cropAndEdit(
+                crop_and_edit(
                     self.screenshot["screenshot"],
                     x,
-                    self.screen['height'] * upperHeightMod,
-                    x + self.screen['width'] * nameWidthMod,
-                    self.screen['height'] * lowerHeightMod
+                    self.screen['height'] * upper_height_mod,
+                    x + self.screen['width'] * name_width_mod,
+                    self.screen['height'] * lower_height_mod
                 )
             ).replace("\x0c", "").replace("\n", "").replace(" ", "")
             self.store[i] = name if name != "" else None
-            x += self.screen['width'] * storeWidthMod
+            x += self.screen['width'] * store_width_mod
 
-    def fetchLevel(self):
+    def __fetch_level(self):
         # see  level
-        upperHeightMod = 880/1080
-        lowerHeightMod = 908/1080
-        leftWidthMod = 314/1920
-        rightWidthMod = 345/1920
+        upper_height_mod = 880 / 1080
+        lower_height_mod = 908 / 1080
+        left_width_mod = 314 / 1920
+        right_width_mod = 345 / 1920
         thresh = 150
-        fn = lambda x: 255 if x > thresh else 0
         ss = (
-            cropAndEdit(
+            crop_and_edit(
                 self.screenshot["screenshot"],
-                self.screen['width'] * leftWidthMod,
-                self.screen['height'] * upperHeightMod,
-                self.screen['width'] * rightWidthMod,
-                self.screen['height'] * lowerHeightMod
+                self.screen['width'] * left_width_mod,
+                self.screen['height'] * upper_height_mod,
+                self.screen['width'] * right_width_mod,
+                self.screen['height'] * lower_height_mod
             )
             .resize((200, 200), Image.ANTIALIAS)
             .convert("L")
-            .point(fn, mode="1")
+            .point(lambda x: 255 if x > thresh else 0, mode="1")
         )
-        strLevel = read(ss, whitelist="0123456789")
-        if len(strLevel) < 1:
-            strLevel = pytesseract.image_to_string(ss,
-                            config="--psm 10 -c tessedit_char_whitelist=0123456789")
+        str_level = read(ss, whitelist="0123456789")
+        if len(str_level) < 1:
+            str_level = pytesseract.image_to_string(ss,
+                                                    config="--psm 10 -c tessedit_char_whitelist=0123456789")
         try:
-            self.level = int(strLevel)
+            self.level = int(str_level)
         except:
             pass
 
-    def fetchGold(self):
+    def __fetch_gold(self):
         # see gold
-        upperHeightMod = 881/1080
-        lowerHeightMod = 910/1080
-        leftWidthMod = 872/1920
-        rightWidthMod = 906/1920
+        upper_height_mod = 881 / 1080
+        lower_height_mod = 910 / 1080
+        left_width_mod = 872 / 1920
+        right_width_mod = 906 / 1920
         thresh = 150
-        fn = lambda x: 255 if x > thresh else 0
         ss = (
-            cropAndEdit(
+            crop_and_edit(
                 self.screenshot["screenshot"],
-                self.screen['width'] * leftWidthMod,
-                self.screen['height'] * upperHeightMod,
-                self.screen['width'] * rightWidthMod,
-                self.screen['height'] * lowerHeightMod
+                self.screen['width'] * left_width_mod,
+                self.screen['height'] * upper_height_mod,
+                self.screen['width'] * right_width_mod,
+                self.screen['height'] * lower_height_mod
             )
             .resize((200, 200), Image.ANTIALIAS)
             .convert("L")
-            .point(fn, mode="1")
+            .point(lambda x: 255 if x > thresh else 0, mode="1")
         )
-        strGold = read(ss, whitelist="0123456789")
-        if len(strGold) < 1:
-            strGold = pytesseract.image_to_string(ss,
-                            config="--psm 10 -c tessedit_char_whitelist=0123456789")
+        str_gold = read(ss, whitelist="0123456789")
+        if len(str_gold) < 1:
+            str_gold = pytesseract.image_to_string(ss,
+                                                   config="--psm 10 -c tessedit_char_whitelist=0123456789")
         try:
-            self.gold = int(strGold)
+            self.gold = int(str_gold)
         except:
             pass
 
-    def fetchTimer(self):
+    def __fetch_timer(self):
         # see timer
-        upperHeightMod = 10/1080
-        lowerHeightMod = 32/1080
-        leftWidthMod = 1142/1920
-        rightWidthMod = 1172/1920
+        upper_height_mod = 10 / 1080
+        lower_height_mod = 32 / 1080
+        left_width_mod = 1142 / 1920
+        right_width_mod = 1172 / 1920
         thresh = 150
-        fn = lambda x: 255 if x > thresh else 0
         ss = (
-            cropAndEdit(
+            crop_and_edit(
                 self.screenshot["screenshot"],
-                self.screen['width'] * leftWidthMod,
-                self.screen['height'] * upperHeightMod,
-                self.screen['width'] * rightWidthMod,
-                self.screen['height'] * lowerHeightMod
+                self.screen['width'] * left_width_mod,
+                self.screen['height'] * upper_height_mod,
+                self.screen['width'] * right_width_mod,
+                self.screen['height'] * lower_height_mod
             )
             .resize((200, 200), Image.ANTIALIAS)
             .convert("L")
-            .point(fn, mode="1")
+            .point(lambda x: 255 if x > thresh else 0, mode="1")
         )
-        strTimer = read(ss, whitelist="0123456789")
-        if len(strTimer) < 1:
-            strTimer = pytesseract.image_to_string(ss,
-                            config="--psm 10 -c tessedit_char_whitelist=0123456789")
+        str_timer = read(ss, whitelist="0123456789")
+        if len(str_timer) < 1:
+            str_timer = pytesseract.image_to_string(ss,
+                                                    config="--psm 10 -c tessedit_char_whitelist=0123456789")
         try:
-            return int(strTimer)
+            return int(str_timer)
         except:
             return 0
 
-    def fetchExp(self):
+    def __fetch_exp(self):
         # run tesseract to locate text
         # recognize champs in store
-        upperHeightMod = 882/1080
-        lowerHeightMod = 908/1080
+        upper_height_mod = 882 / 1080
+        lower_height_mod = 908 / 1080
         if self.requiredExp[self.level] < 10:
-            leftWidthMod = 410/1920
-            rightWidthMod = 432/1920
+            left_width_mod = 410 / 1920
+            right_width_mod = 432 / 1920
         else:
-            leftWidthMod = 405/1920
-            rightWidthMod = 425/1920
+            left_width_mod = 405 / 1920
+            right_width_mod = 425 / 1920
         thresh = 150
-        fn = lambda x: 255 if x > thresh else 0
         ss = (
-            cropAndEdit(
+            crop_and_edit(
                 self.screenshot["screenshot"],
-                self.screen['width'] * leftWidthMod,
-                self.screen['height'] * upperHeightMod,
-                self.screen['width'] * rightWidthMod,
-                self.screen['height'] * lowerHeightMod
+                self.screen['width'] * left_width_mod,
+                self.screen['height'] * upper_height_mod,
+                self.screen['width'] * right_width_mod,
+                self.screen['height'] * lower_height_mod
             )
             .resize((200, 200), Image.ANTIALIAS)
             .convert("L")
-            .point(fn, mode="1")
+            .point(lambda x: 255 if x > thresh else 0, mode="1")
         )
-        strExp = read(ss, whitelist="0123456789")
-        if len(strExp) < 1:
-            strExp = pytesseract.image_to_string(ss,
-                            config="--psm 10 -c tessedit_char_whitelist=0123456789")
+        str_exp = read(ss, whitelist="0123456789")
+        if len(str_exp) < 1:
+            str_exp = pytesseract.image_to_string(ss,
+                                                  config="--psm 10 -c tessedit_char_whitelist=0123456789")
         try:
-            self.xp["actual"] = int(strExp)
+            self.xp["actual"] = int(str_exp)
             if self.xp["actual"] >= self.xp["required"]:
                 self.xp["actual"] = 0
         except:
             pass
 
-    def fetchHp(self):
-        upperHeightMod = 207/1080
-        leftWidthMod = 1775/1920
-        rightWidthMod = 1827/1920
-        oppLeftWidthMod = 1823/1920
-        oppRightWidthMod = 1847/1920
-        hpHeightMod = 35/1080
-        playerHeightMod = 72/1080
-        x = self.screen['height'] * upperHeightMod
+    def __fetch_hp(self):
+        upper_height_mod = 207 / 1080
+        left_width_mod = 1775 / 1920
+        right_width_mod = 1827 / 1920
+        opp_left_width_mod = 1823 / 1920
+        opp_right_width_mod = 1847 / 1920
+        hp_height_mod = 35 / 1080
+        player_height_mod = 72 / 1080
+        x = self.screen['height'] * upper_height_mod
         thresh = 150
-        fn = lambda a: 255 if a > thresh else 0
         for i in range(8):
             # Check for opponent's hp
             ss = (
-                cropAndEdit(
+                crop_and_edit(
                     self.screenshot["screenshot"],
-                    self.screen['width'] * oppLeftWidthMod,
+                    self.screen['width'] * opp_left_width_mod,
                     x,
-                    self.screen['width'] * oppRightWidthMod,
-                    x + self.screen['height'] * hpHeightMod
+                    self.screen['width'] * opp_right_width_mod,
+                    x + self.screen['height'] * hp_height_mod
                 )
                 .resize((200, 200), Image.ANTIALIAS)
                 .convert("L")
-                .point(fn, mode="1")
+                .point(lambda a: 255 if a > thresh else 0, mode="1")
             )
-            strHp = read(ss, whitelist="0123456789")
-            if len(strHp) < 1:
-                strHp = pytesseract.image_to_string(ss,
-                                config="--psm 10 -c tessedit_char_whitelist=0123456789")
+            str_hp = read(ss, whitelist="0123456789")
+            if len(str_hp) < 1:
+                str_hp = pytesseract.image_to_string(ss,
+                                                     config="--psm 10 -c tessedit_char_whitelist=0123456789")
             try:
-                intHp = int(strHp)
-                if intHp <= 100:
-                    self.hpList[i] = intHp
-                    if intHp == 0 and self.position < i:
-                        if self.position == 0 and self.position == i-1:
+                int_hp = int(str_hp)
+                if int_hp <= 100:
+                    self.hpList[i] = int_hp
+                    if int_hp == 0 and self.position < i:
+                        if self.position == 0 and self.position == i - 1:
                             self.done = True
                         return
             except:
                 # If no number was found, check for your hp
                 ss = (
-                    cropAndEdit(
+                    crop_and_edit(
                         self.screenshot["screenshot"],
-                        self.screen['width'] * leftWidthMod,
+                        self.screen['width'] * left_width_mod,
                         x,
-                        self.screen['width'] * rightWidthMod,
-                        x + self.screen['height'] * hpHeightMod
+                        self.screen['width'] * right_width_mod,
+                        x + self.screen['height'] * hp_height_mod
                     )
-                        .resize((200, 200), Image.ANTIALIAS)
-                        .convert("L")
-                        .point(fn, mode="1")
+                    .resize((200, 200), Image.ANTIALIAS)
+                    .convert("L")
+                    .point(lambda a: 255 if a > thresh else 0, mode="1")
                 )
-                strHp = read(ss, whitelist="0123456789")
-                if len(strHp) < 1:
-                    strHp = pytesseract.image_to_string(ss,
-                                                        config="--psm 10 -c tessedit_char_whitelist=0123456789")
+                str_hp = read(ss, whitelist="0123456789")
+                if len(str_hp) < 1:
+                    str_hp = pytesseract.image_to_string(ss,
+                                                         config="--psm 10 -c tessedit_char_whitelist=0123456789")
                 try:
-                    intHp = int(strHp)
-                    if intHp <= 100:
-                        self.hpList[i] = intHp
+                    int_hp = int(str_hp)
+                    if int_hp <= 100:
+                        self.hpList[i] = int_hp
                         self.position = i
-                        if intHp == 0:
+                        if int_hp == 0:
                             self.done = True
                             return
                 except:
                     pass
-            x += self.screen['height'] * playerHeightMod
+            x += self.screen['height'] * player_height_mod
 
     # main function: reads data from in-game screenshot
     def refresh(self):
@@ -304,32 +300,32 @@ class ScreenInterpreter:
                 "timestamp": now,
             }
 
-    # Functions to be called by GameState
-    # Getters
-    def getStore(self):
-        self.refresh()
-        self.fetchStore()
-        return self.store
-
-    def getLevel(self):
-        self.refresh()
-        self.fetchLevel()
-        return self.level
-
-    def getGold(self):
-        self.refresh()
-        self.fetchGold()
-        return self.gold
-
-    def getExpToLevelUp(self):
-        self.refresh()
-        self.fetchExp()
-        return self.xp["required"] - self.xp["actual"]
-
-    def getHp(self):
-        self.refresh()
-        self.fetchHp()
-        return self.hp[self.position], self.position
+    # # Functions to be called by GameState
+    # # Getters
+    # def getStore(self):
+    #     self.refresh()
+    #     self.fetchStore()
+    #     return self.store
+    #
+    # def getLevel(self):
+    #     self.refresh()
+    #     self.fetchLevel()
+    #     return self.level
+    #
+    # def getGold(self):
+    #     self.refresh()
+    #     self.fetchGold()
+    #     return self.gold
+    #
+    # def getExpToLevelUp(self):
+    #     self.refresh()
+    #     self.fetchExp()
+    #     return self.xp["required"] - self.xp["actual"]
+    #
+    # def getHp(self):
+    #     self.refresh()
+    #     self.fetchHp()
+    #     return self.hp[self.position], self.position
 
     def get_observation(self):
         self.refresh()
@@ -345,67 +341,77 @@ class ScreenInterpreter:
             "done": self.done
         }
 
+    def get_timer(self):
+        return 1
+
     # Setters
+    def can_perform_action(self):
+        if self.get_timer() < self.maxTime:
+            self.lock = True
+        if self.lock:
+            return False
+        return True
+
     def buy_champion(self, position):
-        baseWidth = 575
+        base_width = 575
         height = 995
         modifier = 200
-        pyautogui.moveTo(baseWidth+modifier*position, height, duration=self.mouseSpeed)
-        leftClick()
+        pyautogui.moveTo(base_width + modifier * position, height, duration=self.mouseSpeed)
+        left_click()
 
-    def toBench(self, action, position):
-        baseWidth = 425
+    def __to_bench(self, action, position):
+        base_width = 425
         height = 777
         modifier = 118
-        action(baseWidth+modifier*position, height, duration=self.mouseSpeed)
+        action(base_width + modifier * position, height, duration=self.mouseSpeed)
 
-    def toBoard(self, action, position):
+    def __to_board(self, action, position):
         if position[0] == 0:
-            baseWidth = 575
+            base_width = 575
             height = 675
             modifier = 130
         elif position[0] == 1:
-            baseWidth = 530
+            base_width = 530
             height = 590
             modifier = 125
         elif position[0] == 2:
-            baseWidth = 605
+            base_width = 605
             height = 510
             modifier = 120
         elif position[0] == 3:
-            baseWidth = 560
+            base_width = 560
             height = 440
             modifier = 115
         else:
             return
 
-        action(baseWidth+modifier*position[1], height, duration=self.mouseSpeed)
+        action(base_width + modifier * position[1], height, duration=self.mouseSpeed)
 
     def move_from_bench_to_board(self, start, end):
-        self.toBench(pyautogui.moveTo, start)
-        self.toBoard(pyautogui.dragTo, end)
+        self.__to_bench(pyautogui.moveTo, start)
+        self.__to_board(pyautogui.dragTo, end)
 
     def move_from_board_to_bench(self, start, end):
-        self.toBoard(pyautogui.moveTo, start)
-        self.toBench(pyautogui.dragTo, end)
+        self.__to_board(pyautogui.moveTo, start)
+        self.__to_bench(pyautogui.dragTo, end)
 
     def move_in_bench(self, start, end):
-        self.toBench(pyautogui.moveTo, start)
-        self.toBench(pyautogui.dragTo, end)
+        self.__to_bench(pyautogui.moveTo, start)
+        self.__to_bench(pyautogui.dragTo, end)
 
     def move_in_board(self, start, end):
-        self.toBoard(pyautogui.moveTo, start)
-        self.toBoard(pyautogui.dragTo, end)
+        self.__to_board(pyautogui.moveTo, start)
+        self.__to_board(pyautogui.dragTo, end)
 
     def sell_from_bench(self, position):
-        self.toBench(pyautogui.moveTo, position)
+        self.__to_bench(pyautogui.moveTo, position)
         if self.useKeyboard:
             pyautogui.press("e")
         else:
             pyautogui.dragTo(900, 1000, duration=self.mouseSpeed)
 
     def sell_from_board(self, position):
-        self.toBoard(pyautogui.moveTo, position)
+        self.__to_board(pyautogui.moveTo, position)
         if self.useKeyboard:
             pyautogui.press("e")
         else:
@@ -416,14 +422,14 @@ class ScreenInterpreter:
             pyautogui.press("f")
         else:
             pyautogui.moveTo(370, 960, duration=self.mouseSpeed)
-            leftClick()
+            left_click()
 
     def refresh_store(self):
         if self.useKeyboard:
             pyautogui.press("d")
         else:
             pyautogui.moveTo(360, 1030, duration=self.mouseSpeed)
-            leftClick()
+            left_click()
 
     def clear_board(self):
         initial_mouse_speed = self.mouseSpeed
@@ -440,7 +446,4 @@ class ScreenInterpreter:
         self.mouseSpeed = initial_mouse_speed
 
     def wait(self):
-        time.sleep(self.fetchTimer())
-
-
-
+        time.sleep(self.__fetch_timer())

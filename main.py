@@ -37,7 +37,7 @@ def testTrainer():
 
 
 def testEnv():
-    env = GameStateEnv(ScreenInterpreter(maxTime=0, speed=0.2), DDragon())
+    env = GameStateEnv(ScreenInterpreter(max_time=0, speed=0.2), DDragon())
     # It will check your custom environment and output additional warnings if needed
     check_env(env)
 
