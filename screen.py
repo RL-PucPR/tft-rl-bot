@@ -346,7 +346,7 @@ class ScreenInterpreter:
 
     # Setters
     def can_perform_action(self):
-        if self.get_timer() < self.maxTime:
+        if self.__fetch_timer() < self.maxTime:
             self.lock = True
         if self.lock:
             return False
