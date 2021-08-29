@@ -103,7 +103,8 @@ class ScreenInterpreter:
             x += self.screen['width'] * store_width_mod
 
     def __fetch_level(self):
-        # see  level
+        # run tesseract to locate text
+        # recognize player  level
         upper_height_mod = 880 / 1080
         lower_height_mod = 908 / 1080
         left_width_mod = 314 / 1920
@@ -131,7 +132,8 @@ class ScreenInterpreter:
             pass
 
     def __fetch_gold(self):
-        # see gold
+        # run tesseract to locate text
+        # recognize player gold
         upper_height_mod = 881 / 1080
         lower_height_mod = 910 / 1080
         left_width_mod = 872 / 1920
@@ -159,7 +161,8 @@ class ScreenInterpreter:
             pass
 
     def __fetch_timer(self):
-        # see timer
+        # run tesseract to locate text
+        # recognize turn timer
         upper_height_mod = 10 / 1080
         lower_height_mod = 32 / 1080
         left_width_mod = 1142 / 1920
@@ -188,7 +191,7 @@ class ScreenInterpreter:
 
     def __fetch_exp(self):
         # run tesseract to locate text
-        # recognize champs in store
+        # recognize player experience
         upper_height_mod = 882 / 1080
         lower_height_mod = 908 / 1080
         if self.requiredExp[self.level] < 10:
@@ -222,6 +225,8 @@ class ScreenInterpreter:
             pass
 
     def __fetch_hp(self):
+        # run tesseract to locate text
+        # recognize player current hp and position
         upper_height_mod = 207 / 1080
         left_width_mod = 1775 / 1920
         right_width_mod = 1827 / 1920
@@ -340,9 +345,6 @@ class ScreenInterpreter:
             "position": self.position,
             "done": self.done
         }
-
-    def get_timer(self):
-        return 1
 
     # Setters
     def can_perform_action(self):
