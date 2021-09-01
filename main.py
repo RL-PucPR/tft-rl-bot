@@ -13,15 +13,12 @@ from stable_baselines.common.env_checker import check_env
 
 def testReader():
     sleep(1)
-    gs = GameState(ScreenInterpreter(speed=0.2))
+    si = ScreenInterpreter(max_time=2, speed=0.2)
+    gs = GameState(si)
     player = Player(gs)
     while True:
-        gs.update()
-        print("Gold: ", gs.getGold())
-        print("Level: ", gs.getLevel())
-        print("Store: ", gs.getStore())
-        print("xp: ", gs.getXpToLevelUp())
-        print("Hp: ", gs.getHp())
+        si.refresh()
+        print(si.get_observation())
         player.randomAction()
         sleep(0.1)
 
@@ -37,11 +34,12 @@ def testTrainer():
 
 
 def testEnv():
-    env = GameStateEnv(ScreenInterpreter(max_time=0, speed=0.2), DDragon())
+    env = GameStateEnv(ScreenInterpreter(max_time=1, speed=0.2), DDragon())
     # It will check your custom environment and output additional warnings if needed
     check_env(env)
+    print("aaa")
 
 if __name__ == '__main__':
     # testTrainer()
-    # testReader()
-    testEnv()
+    testReader()
+    # testEnv()

@@ -7,7 +7,7 @@ from gym.utils import seeding
 from util import get_board_position
 
 
-class GameStateEnv(gym.Env):
+class GameStateEnv(gym.GoalEnv, ABC):
     metadata = {'render.modes': ['human']}
 
     def __init__(self, acquirer, database):
@@ -60,7 +60,9 @@ class GameStateEnv(gym.Env):
             "level": spaces.Discrete(10),
             "xp": spaces.Discrete(80),
             "hp": spaces.Discrete(100 + 1),
-            "position": spaces.Discrete(8)
+            "position": spaces.Discrete(8),
+            "timer": spaces.Discrete(30),
+            "stage": spaces.Tuple((spaces.Discrete(10), spaces.Discrete(7)))
         })
 
         self.champion_index = {}
@@ -145,13 +147,13 @@ class GameStateEnv(gym.Env):
         self.acquirer.move_from_board_to_bench(get_board_position(params["start"]), params["end"])
         return 0
 
-    def get_observation(self, return_done=False):
+    def get_observation(self):
         state = self.acquirer.get_observation()
 
         store = ()
         n_champions = len(self.champion_index)
         for champion in state["store"]:
-            idx = self.champion_index[champion] if champion is not None else n_champions
+            idx = self.champion_index[champion] if champion in self.champion_index else n_champions
             store = store + (idx,)
 
         empty_champion = {
@@ -167,21 +169,22 @@ class GameStateEnv(gym.Env):
             "xp": state["xp"],
             "hp": state["hp"],
             "position": state["position"],
+            "timer": state["timer"],
+            "stage": state["stage"],
         }
-        if return_done:
-            return observation, state["done"]
-        return observation
+        return observation, state["done"]
 
     def step(self, action):
+        print(action)
         reward = self.action_functions[action["action"]](action["parameters"])
-        observation, done = self.get_observation(True)
+        observation, done = self.get_observation()
         info = {}
         return observation, reward, done, info
 
     def reset(self):
         self.acquirer.clear_board()
         self.acquirer.wait()
-        return self.get_observation()
+        return self.get_observation()[0]
 
     def render(self, mode='human'):
         pass

@@ -15,11 +15,11 @@ def read(img, blacklist=".,", whitelist=None):
     """
     if whitelist:
         return pytesseract.image_to_string(
-            img, config="-c tessedit_char_whitelist=" + whitelist
+            img, config="--psm 6 -c tessedit_char_whitelist=" + whitelist
         )
     else:
         return pytesseract.image_to_string(
-            img, config="-c tessedit_char_blacklist=" + blacklist
+            img, config="--psm 6 -c tessedit_char_blacklist=" + blacklist
         )
 
 
@@ -66,6 +66,8 @@ class ScreenInterpreter:
         }
         self.hpList = [100] * 8
         self.position = 7
+        self.timer = 0
+        self.stage = [0, 0]
         self.done = False
         self.lock = False
         self.requiredExp = requiredExp()
@@ -77,6 +79,8 @@ class ScreenInterpreter:
             self.__fetch_gold,
             self.__fetch_exp,
             self.__fetch_hp,
+            self.__fetch_timer,
+            self.__fetch_stage,
         ]
 
     # Internal functions - called by refresh
@@ -98,7 +102,7 @@ class ScreenInterpreter:
                     x + self.screen['width'] * name_width_mod,
                     self.screen['height'] * lower_height_mod
                 )
-            ).replace("\x0c", "").replace("\n", "").replace(" ", "")
+            ).replace("\x0c", "").replace("\n", "")
             self.store[i] = name if name != "" else None
             x += self.screen['width'] * store_width_mod
 
@@ -109,7 +113,6 @@ class ScreenInterpreter:
         lower_height_mod = 908 / 1080
         left_width_mod = 314 / 1920
         right_width_mod = 345 / 1920
-        thresh = 150
         ss = (
             crop_and_edit(
                 self.screenshot["screenshot"],
@@ -120,12 +123,12 @@ class ScreenInterpreter:
             )
             .resize((200, 200), Image.ANTIALIAS)
             .convert("L")
-            .point(lambda x: 255 if x > thresh else 0, mode="1")
+            .point(lambda x: 255 if x > 150 else 0, mode="1")
         )
         str_level = read(ss, whitelist="0123456789")
-        if len(str_level) < 1:
-            str_level = pytesseract.image_to_string(ss,
-                                                    config="--psm 10 -c tessedit_char_whitelist=0123456789")
+        # if len(str_level) < 1:
+        #     str_level = pytesseract.image_to_string(ss,
+        #                                             config="--psm 10 -c tessedit_char_whitelist=0123456789")
         try:
             self.level = int(str_level)
         except:
@@ -138,7 +141,6 @@ class ScreenInterpreter:
         lower_height_mod = 910 / 1080
         left_width_mod = 872 / 1920
         right_width_mod = 906 / 1920
-        thresh = 150
         ss = (
             crop_and_edit(
                 self.screenshot["screenshot"],
@@ -149,12 +151,12 @@ class ScreenInterpreter:
             )
             .resize((200, 200), Image.ANTIALIAS)
             .convert("L")
-            .point(lambda x: 255 if x > thresh else 0, mode="1")
+            .point(lambda x: 255 if x > 150 else 0, mode="1")
         )
         str_gold = read(ss, whitelist="0123456789")
-        if len(str_gold) < 1:
-            str_gold = pytesseract.image_to_string(ss,
-                                                   config="--psm 10 -c tessedit_char_whitelist=0123456789")
+        # if len(str_gold) < 1:
+        #     str_gold = pytesseract.image_to_string(ss,
+        #                                            config="--psm 10 -c tessedit_char_whitelist=0123456789")
         try:
             self.gold = int(str_gold)
         except:
@@ -167,7 +169,6 @@ class ScreenInterpreter:
         lower_height_mod = 32 / 1080
         left_width_mod = 1142 / 1920
         right_width_mod = 1172 / 1920
-        thresh = 150
         ss = (
             crop_and_edit(
                 self.screenshot["screenshot"],
@@ -178,16 +179,16 @@ class ScreenInterpreter:
             )
             .resize((200, 200), Image.ANTIALIAS)
             .convert("L")
-            .point(lambda x: 255 if x > thresh else 0, mode="1")
+            .point(lambda x: 255 if x > 150 else 0, mode="1")
         )
         str_timer = read(ss, whitelist="0123456789")
-        if len(str_timer) < 1:
-            str_timer = pytesseract.image_to_string(ss,
-                                                    config="--psm 10 -c tessedit_char_whitelist=0123456789")
+        # if len(str_timer) < 1:
+        #     str_timer = pytesseract.image_to_string(ss,
+        #                                             config="--psm 10 -c tessedit_char_whitelist=0123456789")
         try:
-            return int(str_timer)
+            self.timer = int(str_timer)
         except:
-            return 0
+            self.timer = 0
 
     def __fetch_exp(self):
         # run tesseract to locate text
@@ -200,7 +201,6 @@ class ScreenInterpreter:
         else:
             left_width_mod = 405 / 1920
             right_width_mod = 425 / 1920
-        thresh = 150
         ss = (
             crop_and_edit(
                 self.screenshot["screenshot"],
@@ -211,12 +211,12 @@ class ScreenInterpreter:
             )
             .resize((200, 200), Image.ANTIALIAS)
             .convert("L")
-            .point(lambda x: 255 if x > thresh else 0, mode="1")
+            .point(lambda x: 255 if x > 150 else 0, mode="1")
         )
         str_exp = read(ss, whitelist="0123456789")
-        if len(str_exp) < 1:
-            str_exp = pytesseract.image_to_string(ss,
-                                                  config="--psm 10 -c tessedit_char_whitelist=0123456789")
+        # if len(str_exp) < 1:
+        #     str_exp = pytesseract.image_to_string(ss,
+        #                                           config="--psm 10 -c tessedit_char_whitelist=0123456789")
         try:
             self.xp["actual"] = int(str_exp)
             if self.xp["actual"] >= self.xp["required"]:
@@ -235,7 +235,6 @@ class ScreenInterpreter:
         hp_height_mod = 35 / 1080
         player_height_mod = 72 / 1080
         x = self.screen['height'] * upper_height_mod
-        thresh = 150
         for i in range(8):
             # Check for opponent's hp
             ss = (
@@ -248,12 +247,12 @@ class ScreenInterpreter:
                 )
                 .resize((200, 200), Image.ANTIALIAS)
                 .convert("L")
-                .point(lambda a: 255 if a > thresh else 0, mode="1")
+                .point(lambda a: 255 if a > 150 else 0, mode="1")
             )
             str_hp = read(ss, whitelist="0123456789")
-            if len(str_hp) < 1:
-                str_hp = pytesseract.image_to_string(ss,
-                                                     config="--psm 10 -c tessedit_char_whitelist=0123456789")
+            # if len(str_hp) < 1:
+            #     str_hp = pytesseract.image_to_string(ss,
+            #                                          config="--psm 10 -c tessedit_char_whitelist=0123456789")
             try:
                 int_hp = int(str_hp)
                 if int_hp <= 100:
@@ -274,12 +273,12 @@ class ScreenInterpreter:
                     )
                     .resize((200, 200), Image.ANTIALIAS)
                     .convert("L")
-                    .point(lambda a: 255 if a > thresh else 0, mode="1")
+                    .point(lambda a: 255 if a > 150 else 0, mode="1")
                 )
                 str_hp = read(ss, whitelist="0123456789")
-                if len(str_hp) < 1:
-                    str_hp = pytesseract.image_to_string(ss,
-                                                         config="--psm 10 -c tessedit_char_whitelist=0123456789")
+                # if len(str_hp) < 1:
+                #     str_hp = pytesseract.image_to_string(ss,
+                #                                          config="--psm 10 -c tessedit_char_whitelist=0123456789")
                 try:
                     int_hp = int(str_hp)
                     if int_hp <= 100:
@@ -291,6 +290,39 @@ class ScreenInterpreter:
                 except:
                     pass
             x += self.screen['height'] * player_height_mod
+
+    def __fetch_stage(self):
+        # run tesseract to locate text
+        # recognize champs in store
+        upper_height_mod = 10 / 1080
+        lower_height_mod = 30 / 1080
+        left_width_mod = 770 / 1920
+        right_width_mod = 810 / 1920
+        ss = (
+            crop_and_edit(
+                self.screenshot["screenshot"],
+                self.screen['width'] * left_width_mod,
+                self.screen['height'] * upper_height_mod,
+                self.screen['width'] * right_width_mod,
+                self.screen['height'] * lower_height_mod
+            )
+                .resize((200, 200), Image.ANTIALIAS)
+                .convert("L")
+                .point(lambda a: 255 if a > 150 else 0, mode="1")
+        )
+        stage = read(ss, whitelist="0123456789-")
+        # if len(stage) < 1:
+        #     stage = pytesseract.image_to_string(ss,
+        #                                          config="--psm 10 -c tessedit_char_whitelist=0123456789-")
+        try:
+            self.stage = [int(n) for n in stage.split("-")]
+            if len(self.stage) == 1:
+                self.stage = [
+                    int(self.stage[0] / 10),
+                    self.stage[0] % 10
+                ]
+        except:
+            self.stage = [0, 0]
 
     # main function: reads data from in-game screenshot
     def refresh(self):
@@ -343,12 +375,18 @@ class ScreenInterpreter:
             "xp": self.xp["actual"],
             "hp": self.hpList[self.position],
             "position": self.position,
+            "timer": self.timer,
+            "stage": self.stage,
             "done": self.done
         }
 
     # Setters
     def can_perform_action(self):
-        if self.__fetch_timer() < self.maxTime:
+        if self.stage[1] == 4:  # Stages ?-4 are carousel
+            self.lock = True
+            return False
+        self.__fetch_timer()
+        if self.timer < self.maxTime:
             self.lock = True
         if self.lock:
             return False
@@ -448,4 +486,7 @@ class ScreenInterpreter:
         self.mouseSpeed = initial_mouse_speed
 
     def wait(self):
-        time.sleep(self.__fetch_timer())
+        old_stage = self.stage
+        while old_stage == self.stage:
+            # time.sleep(self.__fetch_timer())
+            time.sleep(self.maxTime)
