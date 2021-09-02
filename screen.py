@@ -126,9 +126,6 @@ class ScreenInterpreter:
             .point(lambda x: 255 if x > 150 else 0, mode="1")
         )
         str_level = read(ss, whitelist="0123456789")
-        # if len(str_level) < 1:
-        #     str_level = pytesseract.image_to_string(ss,
-        #                                             config="--psm 10 -c tessedit_char_whitelist=0123456789")
         try:
             self.level = int(str_level)
         except:
@@ -154,9 +151,6 @@ class ScreenInterpreter:
             .point(lambda x: 255 if x > 150 else 0, mode="1")
         )
         str_gold = read(ss, whitelist="0123456789")
-        # if len(str_gold) < 1:
-        #     str_gold = pytesseract.image_to_string(ss,
-        #                                            config="--psm 10 -c tessedit_char_whitelist=0123456789")
         try:
             self.gold = int(str_gold)
         except:
@@ -182,9 +176,6 @@ class ScreenInterpreter:
             .point(lambda x: 255 if x > 150 else 0, mode="1")
         )
         str_timer = read(ss, whitelist="0123456789")
-        # if len(str_timer) < 1:
-        #     str_timer = pytesseract.image_to_string(ss,
-        #                                             config="--psm 10 -c tessedit_char_whitelist=0123456789")
         try:
             self.timer = int(str_timer)
         except:
@@ -214,9 +205,6 @@ class ScreenInterpreter:
             .point(lambda x: 255 if x > 150 else 0, mode="1")
         )
         str_exp = read(ss, whitelist="0123456789")
-        # if len(str_exp) < 1:
-        #     str_exp = pytesseract.image_to_string(ss,
-        #                                           config="--psm 10 -c tessedit_char_whitelist=0123456789")
         try:
             self.xp["actual"] = int(str_exp)
             if self.xp["actual"] >= self.xp["required"]:
@@ -250,9 +238,6 @@ class ScreenInterpreter:
                 .point(lambda a: 255 if a > 150 else 0, mode="1")
             )
             str_hp = read(ss, whitelist="0123456789")
-            # if len(str_hp) < 1:
-            #     str_hp = pytesseract.image_to_string(ss,
-            #                                          config="--psm 10 -c tessedit_char_whitelist=0123456789")
             try:
                 int_hp = int(str_hp)
                 if int_hp <= 100:
@@ -276,9 +261,6 @@ class ScreenInterpreter:
                     .point(lambda a: 255 if a > 150 else 0, mode="1")
                 )
                 str_hp = read(ss, whitelist="0123456789")
-                # if len(str_hp) < 1:
-                #     str_hp = pytesseract.image_to_string(ss,
-                #                                          config="--psm 10 -c tessedit_char_whitelist=0123456789")
                 try:
                     int_hp = int(str_hp)
                     if int_hp <= 100:
@@ -311,9 +293,6 @@ class ScreenInterpreter:
                 .point(lambda a: 255 if a > 150 else 0, mode="1")
         )
         stage = read(ss, whitelist="0123456789-")
-        # if len(stage) < 1:
-        #     stage = pytesseract.image_to_string(ss,
-        #                                          config="--psm 10 -c tessedit_char_whitelist=0123456789-")
         try:
             self.stage = [int(n) for n in stage.split("-")]
             if len(self.stage) == 1:
@@ -336,33 +315,6 @@ class ScreenInterpreter:
                 "screenshot": pyautogui.screenshot("tmp/in.png"),
                 "timestamp": now,
             }
-
-    # # Functions to be called by GameState
-    # # Getters
-    # def getStore(self):
-    #     self.refresh()
-    #     self.fetchStore()
-    #     return self.store
-    #
-    # def getLevel(self):
-    #     self.refresh()
-    #     self.fetchLevel()
-    #     return self.level
-    #
-    # def getGold(self):
-    #     self.refresh()
-    #     self.fetchGold()
-    #     return self.gold
-    #
-    # def getExpToLevelUp(self):
-    #     self.refresh()
-    #     self.fetchExp()
-    #     return self.xp["required"] - self.xp["actual"]
-    #
-    # def getHp(self):
-    #     self.refresh()
-    #     self.fetchHp()
-    #     return self.hp[self.position], self.position
 
     def get_observation(self):
         self.refresh()
@@ -490,3 +442,5 @@ class ScreenInterpreter:
         while old_stage == self.stage:
             # time.sleep(self.__fetch_timer())
             time.sleep(self.maxTime)
+            self.refresh()
+            self.__fetch_stage()
