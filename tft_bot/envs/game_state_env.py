@@ -149,17 +149,42 @@ class GameStateEnv(gym.GoalEnv, ABC):
 
     def get_observation(self):
         state = self.acquirer.get_observation()
-
-        store = ()
         n_champions = len(self.champion_index)
-        for champion in state["store"]:
-            idx = self.champion_index[champion] if champion in self.champion_index else n_champions
-            store = store + (idx,)
-
         empty_champion = {
             "champion": n_champions,
             "star": 0
         }
+
+        store = ()
+        for champion in state["store"]:
+            idx = self.champion_index[champion] if champion in self.champion_index else n_champions
+            store = store + (idx,)
+
+        bench = ()
+        for champion in state['bench']:
+            if champion is not None and champion["name"] in self.champion_index:
+                aux = {
+                    "champion": self.champion_index[champion["name"]],
+                    "star": champion["star"]
+                }
+            else:
+                aux = empty_champion
+            bench = bench + (aux,)
+
+        board = ()
+        for row in state['board']:
+            aux_row = ()
+            for champion in row:
+                if champion is not None and champion["name"] in self.champion_index:
+                    aux = {
+                        "champion": self.champion_index[champion["name"]],
+                        "star": champion["star"]
+                    }
+                else:
+                    aux = empty_champion
+                aux_row = aux_row + (aux,)
+            board = board + (aux_row,)
+
         observation = {
             "board": ((empty_champion,) * 7,) * 4,
             "bench": (empty_champion,) * 9,

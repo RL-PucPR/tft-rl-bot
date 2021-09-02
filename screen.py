@@ -39,6 +39,10 @@ def left_click(delay=0.1):
     pyautogui.mouseUp()
 
 
+def is_same_champ(a, b):
+    return a is not None and b is not None and a["name"] == b["name"] and a["star"] == b["star"]
+
+
 class ScreenInterpreter:
     # ScreenInterpreter will only work with the game running in fullscreen
 
@@ -57,6 +61,8 @@ class ScreenInterpreter:
             "timestamp": 0,
         }
         self.maxTime = max_time
+        self.bench = [None] * 9
+        self.board = [[None] * 7] * 4
         self.store = [None] * 5
         self.level = 1
         self.gold = 0
@@ -83,7 +89,61 @@ class ScreenInterpreter:
             self.__fetch_stage,
         ]
 
-    # Internal functions - called by refresh
+    # Functions destined to control champion position
+    def __next_available(self):
+        # TODO - Check position priorities
+        for i in range(len(self.bench)):
+            if self.bench[i] is None:
+                return i
+        for i in range(len(self.board)):
+            for j in range(len((self.board[i]))):
+                if self.board[i][j] is None:
+                    return [i, j]
+
+    def __can_merge(self, champion_pos):
+        if isinstance(champion_pos, type([])):
+            champion = self.board[champion_pos[0]][champion_pos[1]]
+        else:
+            champion = self.bench[champion_pos]
+        positions = [champion_pos]
+        for i in range(len(self.bench)):
+            if is_same_champ(self.bench[i], champion):
+                positions.append(i)
+                if len(positions) == 3:
+                    return positions
+        for i in range(len(self.board)):
+            for j in range(len((self.board[i]))):
+                if is_same_champ(self.board[i][j], champion):
+                    positions.append([i, j])
+                    if len(positions) == 3:
+                        return positions
+        return positions
+
+    def __merge(self, pos_list):
+        # TODO - Check position priorities
+        pos = 0
+        return pos
+
+    def __champ_bought(self, champion_name):
+        pos = self.__next_available()
+        champion = {
+            "name": champion_name,
+            "star": 1
+        }
+        if isinstance(pos, type([])):
+            self.board[pos[0]][pos[1]] = champion
+        else:
+            self.bench[pos] = champion
+        pos_list = self.__can_merge(pos)
+        if len(pos_list) == 3:
+            pos = self.__merge(pos_list)
+            pos_list = self.__can_merge(pos)
+            if len(pos_list) == 3:
+                pos = self.__merge(pos_list)
+
+    [{"name": "Leona", "star": 1}, None, None, None, None, None, None, None, None]
+
+    # Internal functions - called after refresh
     def __fetch_store(self):
         # run tesseract to locate text
         # recognize champs in store
@@ -121,9 +181,9 @@ class ScreenInterpreter:
                 self.screen['width'] * right_width_mod,
                 self.screen['height'] * lower_height_mod
             )
-            .resize((200, 200), Image.ANTIALIAS)
-            .convert("L")
-            .point(lambda x: 255 if x > 150 else 0, mode="1")
+                .resize((200, 200), Image.ANTIALIAS)
+                .convert("L")
+                .point(lambda x: 255 if x > 150 else 0, mode="1")
         )
         str_level = read(ss, whitelist="0123456789")
         try:
@@ -146,9 +206,9 @@ class ScreenInterpreter:
                 self.screen['width'] * right_width_mod,
                 self.screen['height'] * lower_height_mod
             )
-            .resize((200, 200), Image.ANTIALIAS)
-            .convert("L")
-            .point(lambda x: 255 if x > 150 else 0, mode="1")
+                .resize((200, 200), Image.ANTIALIAS)
+                .convert("L")
+                .point(lambda x: 255 if x > 150 else 0, mode="1")
         )
         str_gold = read(ss, whitelist="0123456789")
         try:
@@ -171,9 +231,9 @@ class ScreenInterpreter:
                 self.screen['width'] * right_width_mod,
                 self.screen['height'] * lower_height_mod
             )
-            .resize((200, 200), Image.ANTIALIAS)
-            .convert("L")
-            .point(lambda x: 255 if x > 150 else 0, mode="1")
+                .resize((200, 200), Image.ANTIALIAS)
+                .convert("L")
+                .point(lambda x: 255 if x > 150 else 0, mode="1")
         )
         str_timer = read(ss, whitelist="0123456789")
         try:
@@ -200,9 +260,9 @@ class ScreenInterpreter:
                 self.screen['width'] * right_width_mod,
                 self.screen['height'] * lower_height_mod
             )
-            .resize((200, 200), Image.ANTIALIAS)
-            .convert("L")
-            .point(lambda x: 255 if x > 150 else 0, mode="1")
+                .resize((200, 200), Image.ANTIALIAS)
+                .convert("L")
+                .point(lambda x: 255 if x > 150 else 0, mode="1")
         )
         str_exp = read(ss, whitelist="0123456789")
         try:
@@ -233,9 +293,9 @@ class ScreenInterpreter:
                     self.screen['width'] * opp_right_width_mod,
                     x + self.screen['height'] * hp_height_mod
                 )
-                .resize((200, 200), Image.ANTIALIAS)
-                .convert("L")
-                .point(lambda a: 255 if a > 150 else 0, mode="1")
+                    .resize((200, 200), Image.ANTIALIAS)
+                    .convert("L")
+                    .point(lambda a: 255 if a > 150 else 0, mode="1")
             )
             str_hp = read(ss, whitelist="0123456789")
             try:
@@ -256,9 +316,9 @@ class ScreenInterpreter:
                         self.screen['width'] * right_width_mod,
                         x + self.screen['height'] * hp_height_mod
                     )
-                    .resize((200, 200), Image.ANTIALIAS)
-                    .convert("L")
-                    .point(lambda a: 255 if a > 150 else 0, mode="1")
+                        .resize((200, 200), Image.ANTIALIAS)
+                        .convert("L")
+                        .point(lambda a: 255 if a > 150 else 0, mode="1")
                 )
                 str_hp = read(ss, whitelist="0123456789")
                 try:
