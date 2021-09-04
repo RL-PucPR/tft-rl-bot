@@ -62,8 +62,9 @@ class ScreenInterpreter:
         }
         self.maxTime = max_time
         self.bench = [None] * 9
-        self.board = [[None] * 7] * 4
+        self.board = [[None] * 7 for _ in range(4)]
         self.store = [None] * 5
+        self.champsOnBoard = 0
         self.level = 1
         self.gold = 0
         self.xp = {
@@ -90,38 +91,64 @@ class ScreenInterpreter:
         ]
 
     # Functions destined to control champion position
-    def __next_available(self):
-        # TODO - Check position priorities
+    # Champion positions always prioritize leftmost and lowermost (for board)
+    # Bench positions are arrays of len == 1 and board are of len == 2
+    def __next_bench_available(self):
         for i in range(len(self.bench)):
             if self.bench[i] is None:
-                return i
+                return [i]
+
+    def __next_board_available(self):
         for i in range(len(self.board)):
             for j in range(len((self.board[i]))):
                 if self.board[i][j] is None:
                     return [i, j]
 
+    def __next_available(self):
+        # Next available prioritize bench over board
+        pos = self.__next_bench_available()
+        if pos is not None:
+            return pos
+
+        return self.__next_board_available()
+
     def __can_merge(self, champion_pos):
-        if isinstance(champion_pos, type([])):
+        # Returns the list of positions of the champions that would be merged
+        if len(champion_pos) > 1:
             champion = self.board[champion_pos[0]][champion_pos[1]]
         else:
-            champion = self.bench[champion_pos]
-        positions = [champion_pos]
-        for i in range(len(self.bench)):
-            if is_same_champ(self.bench[i], champion):
-                positions.append(i)
-                if len(positions) == 3:
-                    return positions
+            champion = self.bench[champion_pos[0]]
+        positions = []
         for i in range(len(self.board)):
             for j in range(len((self.board[i]))):
                 if is_same_champ(self.board[i][j], champion):
                     positions.append([i, j])
                     if len(positions) == 3:
                         return positions
-        return positions
+        for i in range(len(self.bench)):
+            if is_same_champ(self.bench[i], champion):
+                positions.append([i])
+                if len(positions) == 3:
+                    return positions
+        # Champion is not able to be merged
+        return False
 
     def __merge(self, pos_list):
-        # TODO - Check position priorities
-        pos = 0
+        # Merging prioritize board over bench
+        # pos_list parameter is already ordered following priority
+        pos = pos_list[0]
+        if len(pos) > 1:
+            self.board[pos[0]][pos[1]]["star"] += 1
+        else:
+            self.bench[pos[0]]["star"] += 1
+
+        for aux in pos_list[1:]:
+            if len(aux) > 1:
+                self.board[aux[0]][aux[1]] = None
+                self.champsOnBoard -= 1
+            else:
+                self.bench[aux[0]] = None
+
         return pos
 
     def __champ_bought(self, champion_name):
@@ -130,18 +157,16 @@ class ScreenInterpreter:
             "name": champion_name,
             "star": 1
         }
-        if isinstance(pos, type([])):
+        if len(pos) > 1:
             self.board[pos[0]][pos[1]] = champion
         else:
-            self.bench[pos] = champion
+            self.bench[pos[0]] = champion
         pos_list = self.__can_merge(pos)
-        if len(pos_list) == 3:
+        if pos_list:
             pos = self.__merge(pos_list)
             pos_list = self.__can_merge(pos)
-            if len(pos_list) == 3:
-                pos = self.__merge(pos_list)
-
-    [{"name": "Leona", "star": 1}, None, None, None, None, None, None, None, None]
+            if pos_list:
+                self.__merge(pos_list)
 
     # Internal functions - called after refresh
     def __fetch_store(self):
@@ -382,6 +407,8 @@ class ScreenInterpreter:
             fetch()
         return {
             "store": self.store,
+            "board": self.board,
+            "bench": self.bench,
             "gold": self.gold,
             "level": self.level,
             "xp": self.xp["actual"],
@@ -393,6 +420,16 @@ class ScreenInterpreter:
         }
 
     # Setters
+    def __fill_board(self):
+        while self.champsOnBoard < self.level:
+            pos = self.__next_board_available()
+            for i in range(len(self.bench)):
+                if self.bench[i] is not None:
+                    self.move_from_bench_to_board(i, pos)
+                    break
+            else:
+                return
+
     def can_perform_action(self):
         if self.stage[1] == 4:  # Stages ?-4 are carousel
             self.lock = True
@@ -405,10 +442,17 @@ class ScreenInterpreter:
         return True
 
     def buy_champion(self, position):
+        if self.store[position] is None:
+            return
+        if None not in self.bench:
+            return
         base_width = 575
         height = 995
         modifier = 200
         pyautogui.moveTo(base_width + modifier * position, height, duration=self.mouseSpeed)
+        self.__champ_bought(self.store[position])
+        self.store[position] = None
+        self.__fill_board()
         left_click()
 
     def __to_bench(self, action, position):
@@ -418,19 +462,19 @@ class ScreenInterpreter:
         action(base_width + modifier * position, height, duration=self.mouseSpeed)
 
     def __to_board(self, action, position):
-        if position[0] == 0:
+        if position[0] == 3:
             base_width = 575
             height = 675
             modifier = 130
-        elif position[0] == 1:
+        elif position[0] == 2:
             base_width = 530
             height = 590
             modifier = 125
-        elif position[0] == 2:
+        elif position[0] == 1:
             base_width = 605
             height = 510
             modifier = 120
-        elif position[0] == 3:
+        elif position[0] == 0:
             base_width = 560
             height = 440
             modifier = 115
@@ -440,34 +484,67 @@ class ScreenInterpreter:
         action(base_width + modifier * position[1], height, duration=self.mouseSpeed)
 
     def move_from_bench_to_board(self, start, end):
-        self.__to_bench(pyautogui.moveTo, start)
-        self.__to_board(pyautogui.dragTo, end)
+        if self.bench[start] is None:
+            return
+        if self.board[end[0]][end[1]] is not None or self.champsOnBoard < self.level:
+            self.__to_bench(pyautogui.moveTo, start)
+            self.__to_board(pyautogui.dragTo, end)
+            aux = self.bench[start]
+            self.bench[start] = self.board[end[0]][end[1]]
+            self.board[end[0]][end[1]] = aux
+            self.champsOnBoard += 1
 
     def move_from_board_to_bench(self, start, end):
+        if self.board[start[0]][start[1]] is None:
+            return
         self.__to_board(pyautogui.moveTo, start)
         self.__to_bench(pyautogui.dragTo, end)
+        aux = self.board[start[0]][start[1]]
+        self.board[start[0]][start[1]] = self.bench[end]
+        self.bench[end] = aux
+        if self.board[start[0]][start[1]] is None:
+            self.champsOnBoard -= 1
+            self.__fill_board()
 
     def move_in_bench(self, start, end):
+        if self.bench[start] is None:
+            return
         self.__to_bench(pyautogui.moveTo, start)
         self.__to_bench(pyautogui.dragTo, end)
+        aux = self.bench[start]
+        self.bench[start] = self.bench[end]
+        self.bench[end] = aux
 
     def move_in_board(self, start, end):
+        if self.board[start[0]][start[1]] is None:
+            return
         self.__to_board(pyautogui.moveTo, start)
         self.__to_board(pyautogui.dragTo, end)
+        aux = self.board[start[0]][start[1]]
+        self.board[start[0]][start[1]] = self.board[end[0]][end[1]]
+        self.board[end[0]][end[1]] = aux
 
     def sell_from_bench(self, position):
+        if self.bench[position] is None:
+            return
         self.__to_bench(pyautogui.moveTo, position)
         if self.useKeyboard:
             pyautogui.press("e")
         else:
             pyautogui.dragTo(900, 1000, duration=self.mouseSpeed)
+        self.bench[position] = None
 
     def sell_from_board(self, position):
+        if self.board[position[0]][position[1]] is None:
+            return
         self.__to_board(pyautogui.moveTo, position)
         if self.useKeyboard:
             pyautogui.press("e")
         else:
             pyautogui.dragTo(900, 1000, duration=self.mouseSpeed)
+        self.board[position[0]][position[1]] = None
+        self.champsOnBoard -= 1
+        self.__fill_board()
 
     def buy_exp(self):
         if self.useKeyboard:
@@ -475,6 +552,7 @@ class ScreenInterpreter:
         else:
             pyautogui.moveTo(370, 960, duration=self.mouseSpeed)
             left_click()
+        self.__fill_board()
 
     def refresh_store(self):
         if self.useKeyboard:
