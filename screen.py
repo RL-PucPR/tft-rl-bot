@@ -6,10 +6,12 @@ import pytesseract  # Image interpreter
 import pyautogui  # Screen manipulation
 import time
 from acquirer import Acquirer
-from database import requiredExp
+from database import DDragon
+
+REJECTED = DDragon.REJECTED
 
 
-def read(img, blacklist=".,", whitelist=None):
+def read(img, blacklist=".,_-~()", whitelist=None):
     """
     Performs the tesseract operation on a cropped image after inversion and desaturation.
     """
@@ -47,7 +49,7 @@ class ScreenInterpreter:
     # ScreenInterpreter will only work with the game running in fullscreen
 
     # constructor
-    def __init__(self, max_time=2, keyboard=False, speed=0.1):
+    def __init__(self, database, max_time=2, keyboard=False, speed=0.1):
         super().__init__()
         pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
         # track relevant data on the frame
@@ -77,9 +79,11 @@ class ScreenInterpreter:
         self.stage = [0, 0]
         self.done = False
         self.lock = False
-        self.requiredExp = requiredExp()
+        self.requiredExp = database.requiredExp
+        self.championPrices = database.championPrices
         self.useKeyboard = keyboard
         self.mouseSpeed = speed
+        self.nextFunction = None
         self.fetchFunctions = [
             self.__fetch_store,
             self.__fetch_level,
@@ -167,6 +171,9 @@ class ScreenInterpreter:
             pos_list = self.__can_merge(pos)
             if pos_list:
                 self.__merge(pos_list)
+        #         return champ 3 star
+        #     return champ 2 star
+        # return no merge
 
     # Internal functions - called after refresh
     def __fetch_store(self):
@@ -188,7 +195,7 @@ class ScreenInterpreter:
                     self.screen['height'] * lower_height_mod
                 )
             ).replace("\x0c", "").replace("\n", "")
-            self.store[i] = name if name != "" else None
+            self.store[i] = {"name": name, "price": self.championPrices[name]} if name in self.championPrices else None
             x += self.screen['width'] * store_width_mod
 
     def __fetch_level(self):
@@ -420,7 +427,7 @@ class ScreenInterpreter:
         }
 
     # Setters
-    def __fill_board(self):
+    def fill_board(self):
         while self.champsOnBoard < self.level:
             pos = self.__next_board_available()
             for i in range(len(self.bench)):
@@ -430,30 +437,24 @@ class ScreenInterpreter:
             else:
                 return
 
-    def can_perform_action(self):
-        if self.stage[1] == 4:  # Stages ?-4 are carousel
-            self.lock = True
-            return False
-        self.__fetch_timer()
-        if self.timer < self.maxTime:
-            self.lock = True
-        if self.lock:
-            return False
-        return True
-
     def buy_champion(self, position):
+        if self.nextFunction is not None:
+            return
         if self.store[position] is None:
             return
         if None not in self.bench:
+            return
+        if self.gold < self.store[position]["price"]:
             return
         base_width = 575
         height = 995
         modifier = 200
         pyautogui.moveTo(base_width + modifier * position, height, duration=self.mouseSpeed)
-        self.__champ_bought(self.store[position])
-        self.store[position] = None
-        self.__fill_board()
         left_click()
+        self.__champ_bought(self.store[position]["name"])
+        self.store[position] = None
+        if self.champsOnBoard < self.level and sum(x is not None for x in self.bench) > 0:
+            self.nextFunction = self.move_from_bench_to_board
 
     def __to_bench(self, action, position):
         base_width = 425
@@ -484,6 +485,8 @@ class ScreenInterpreter:
         action(base_width + modifier * position[1], height, duration=self.mouseSpeed)
 
     def move_from_bench_to_board(self, start, end):
+        if self.nextFunction is not None or self.nextFunction != self.move_from_bench_to_board:
+            return
         if self.bench[start] is None:
             return
         if self.board[end[0]][end[1]] is not None or self.champsOnBoard < self.level:
@@ -493,8 +496,12 @@ class ScreenInterpreter:
             self.bench[start] = self.board[end[0]][end[1]]
             self.board[end[0]][end[1]] = aux
             self.champsOnBoard += 1
+        if self.champsOnBoard < self.level and sum(x is not None for x in self.bench) > 0:
+            self.nextFunction = self.move_from_bench_to_board
 
     def move_from_board_to_bench(self, start, end):
+        if self.nextFunction is not None:
+            return
         if self.board[start[0]][start[1]] is None:
             return
         self.__to_board(pyautogui.moveTo, start)
@@ -504,9 +511,12 @@ class ScreenInterpreter:
         self.bench[end] = aux
         if self.board[start[0]][start[1]] is None:
             self.champsOnBoard -= 1
-            self.__fill_board()
+            if self.champsOnBoard < self.level and sum(x is not None for x in self.bench) > 0:
+                self.nextFunction = self.move_from_bench_to_board
 
     def move_in_bench(self, start, end):
+        if self.nextFunction is not None:
+            return
         if self.bench[start] is None:
             return
         self.__to_bench(pyautogui.moveTo, start)
@@ -516,6 +526,8 @@ class ScreenInterpreter:
         self.bench[end] = aux
 
     def move_in_board(self, start, end):
+        if self.nextFunction is not None:
+            return
         if self.board[start[0]][start[1]] is None:
             return
         self.__to_board(pyautogui.moveTo, start)
@@ -525,6 +537,8 @@ class ScreenInterpreter:
         self.board[end[0]][end[1]] = aux
 
     def sell_from_bench(self, position):
+        if self.nextFunction is not None:
+            return
         if self.bench[position] is None:
             return
         self.__to_bench(pyautogui.moveTo, position)
@@ -535,6 +549,8 @@ class ScreenInterpreter:
         self.bench[position] = None
 
     def sell_from_board(self, position):
+        if self.nextFunction is not None:
+            return
         if self.board[position[0]][position[1]] is None:
             return
         self.__to_board(pyautogui.moveTo, position)
@@ -544,22 +560,46 @@ class ScreenInterpreter:
             pyautogui.dragTo(900, 1000, duration=self.mouseSpeed)
         self.board[position[0]][position[1]] = None
         self.champsOnBoard -= 1
-        self.__fill_board()
+        if self.champsOnBoard < self.level and sum(x is not None for x in self.bench) > 0:
+            self.nextFunction = self.move_from_bench_to_board
 
     def buy_exp(self):
+        if self.nextFunction is not None:
+            return
+        if self.gold < 4:
+            return
         if self.useKeyboard:
             pyautogui.press("f")
         else:
             pyautogui.moveTo(370, 960, duration=self.mouseSpeed)
             left_click()
-        self.__fill_board()
+        self.refresh()
+        self.__fetch_level()
+        if self.champsOnBoard < self.level and sum(x is not None for x in self.bench) > 0:
+            self.nextFunction = self.move_from_bench_to_board
 
     def refresh_store(self):
+        if self.nextFunction is not None:
+            return
+        if self.gold < 2:
+            return
         if self.useKeyboard:
             pyautogui.press("d")
         else:
             pyautogui.moveTo(360, 1030, duration=self.mouseSpeed)
             left_click()
+
+    def wait(self):
+        if self.nextFunction is not None:
+            return
+        old_stage = self.stage
+        while old_stage == self.stage:
+            time.sleep(self.maxTime)
+            self.refresh()
+            self.__fetch_stage()
+        self.__fetch_level()
+        if self.champsOnBoard < self.level and sum(x is not None for x in self.bench) > 0:
+            self.nextFunction = self.move_from_bench_to_board
 
     def clear_board(self):
         initial_mouse_speed = self.mouseSpeed
@@ -574,11 +614,3 @@ class ScreenInterpreter:
                 self.sell_from_board([i, j])
 
         self.mouseSpeed = initial_mouse_speed
-
-    def wait(self):
-        old_stage = self.stage
-        while old_stage == self.stage:
-            # time.sleep(self.__fetch_timer())
-            time.sleep(self.maxTime)
-            self.refresh()
-            self.__fetch_stage()

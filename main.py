@@ -1,3 +1,4 @@
+
 from controller import Controller
 from screen import ScreenInterpreter
 from state import GameState
@@ -11,18 +12,19 @@ from stable_baselines import A2C
 from stable_baselines.common.env_checker import check_env
 
 
-def testReader():
+def test_reader():
     sleep(1)
-    si = ScreenInterpreter(max_time=2, speed=0.2)
+    si = ScreenInterpreter(database=DDragon().load(), max_time=2, speed=0.2)
     player = Player(si)
     while True:
         si.refresh()
         print(si.get_observation())
         player.randomAction()
+        si.fill_board()
         sleep(0.5)
 
 
-def testTrainer():
+def test_trainer():
     c = Controller()
     print(c.pool)
     print(c.odds)
@@ -32,13 +34,21 @@ def testTrainer():
         shop = c.refreshShop(shop, i + 1)
 
 
-def testEnv():
+def test_env():
     env = GameStateEnv(ScreenInterpreter(max_time=1, speed=0.2), DDragon())
     # It will check your custom environment and output additional warnings if needed
     check_env(env)
 
 
+def teste():
+    pass
+
+
 if __name__ == '__main__':
-    # testTrainer()
-    testReader()
-    # testEnv()
+    # test_trainer()
+    # test_reader()
+    # test_env()
+    print("teste")
+    print(teste)
+    teste()
+    print("teste")

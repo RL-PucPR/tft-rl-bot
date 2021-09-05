@@ -104,7 +104,7 @@ class Player:
             self.buyChampion,
             self.move,
             self.sell,
-            self.levelUp,
-            self.refreshStore,
-            self.wait,
+            # self.levelUp,
+            # self.refreshStore,
+            # self.wait,
         ]
