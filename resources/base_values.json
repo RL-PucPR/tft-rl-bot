@@ -81,5 +81,31 @@
     "7": 56,
     "8": 80,
     "9": 0
+  },
+  "rewardValues": {
+    "combine_3": 45,
+    "swap_1-3": 40,
+    "add_champ_3": ,
+    "add_champ_2": ,
+    "add_champ_1": ,
+    "swap_2-3": 30,
+    "combine_2": 15,
+    "swap_1-2": 10,
+    "level_up": 10,
+    "simple_buy": 5,
+    "simple_swap": ,
+    "rerolled": 3,
+    "basic": 0,
+    "xp_buy": ,
+    "sell_1": -5,
+    "swap_2-1": -10,
+    "sell_2": -15,
+    "swap_3-2": -30,
+    "remove_champ_1": ,
+    "remove_champ_2": ,
+    "remove_champ_3": ,
+    "swap_3-1": -40,
+    "sell_3": -45,
+    "rejected": -50
   }
 }

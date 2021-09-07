@@ -24,6 +24,7 @@ class DDragon:
     items = []
     pool = {}
     odds = {}
+    rewardValues = {}
     REJECTED = -50
 
     def load(self):
@@ -53,7 +54,7 @@ class DDragon:
             self.odds = data["odds"]
             for lvl, required in data["requiredExp"].items():
                 self.requiredExp[int(lvl)] = required
-
+            self.rewardValues = data["rewardValues"]
         return self
 
     def __init__(self):

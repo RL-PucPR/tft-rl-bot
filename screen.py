@@ -81,6 +81,7 @@ class ScreenInterpreter:
         self.lock = False
         self.requiredExp = database.requiredExp
         self.championPrices = database.championPrices
+        self.rewardValues = database.rewardValues
         self.useKeyboard = keyboard
         self.mouseSpeed = speed
         self.nextFunction = None
@@ -171,9 +172,9 @@ class ScreenInterpreter:
             pos_list = self.__can_merge(pos)
             if pos_list:
                 self.__merge(pos_list)
-        #         return champ 3 star
-        #     return champ 2 star
-        # return no merge
+                return self.rewardValues["combine_3"]
+            return self.rewardValues["combine_2"]
+        return self.rewardValues["simple_buy"]
 
     # Internal functions - called after refresh
     def __fetch_store(self):
@@ -367,7 +368,7 @@ class ScreenInterpreter:
 
     def __fetch_stage(self):
         # run tesseract to locate text
-        # recognize champs in store
+        # recognize current stage
         upper_height_mod = 10 / 1080
         lower_height_mod = 30 / 1080
         left_width_mod = 770 / 1920
@@ -392,6 +393,8 @@ class ScreenInterpreter:
                     int(self.stage[0] / 10),
                     self.stage[0] % 10
                 ]
+            if stage[1] == 4:
+                self.nextFunction = self.wait
         except:
             self.stage = [0, 0]
 
@@ -439,22 +442,23 @@ class ScreenInterpreter:
 
     def buy_champion(self, position):
         if self.nextFunction is not None:
-            return
+            return self.rewardValues["rejected"]
         if self.store[position] is None:
-            return
+            return self.rewardValues["rejected"]
         if None not in self.bench:
-            return
+            return self.rewardValues["rejected"]
         if self.gold < self.store[position]["price"]:
-            return
+            return self.rewardValues["rejected"]
         base_width = 575
         height = 995
         modifier = 200
         pyautogui.moveTo(base_width + modifier * position, height, duration=self.mouseSpeed)
         left_click()
-        self.__champ_bought(self.store[position]["name"])
+        reward = self.__champ_bought(self.store[position]["name"])
         self.store[position] = None
         if self.champsOnBoard < self.level and sum(x is not None for x in self.bench) > 0:
             self.nextFunction = self.move_from_bench_to_board
+        return reward
 
     def __to_bench(self, action, position):
         base_width = 425
@@ -486,112 +490,154 @@ class ScreenInterpreter:
 
     def move_from_bench_to_board(self, start, end):
         if self.nextFunction is not None or self.nextFunction != self.move_from_bench_to_board:
-            return
+            return self.rewardValues["rejected"]
         if self.bench[start] is None:
-            return
-        if self.board[end[0]][end[1]] is not None or self.champsOnBoard < self.level:
-            self.__to_bench(pyautogui.moveTo, start)
-            self.__to_board(pyautogui.dragTo, end)
-            aux = self.bench[start]
-            self.bench[start] = self.board[end[0]][end[1]]
-            self.board[end[0]][end[1]] = aux
-            self.champsOnBoard += 1
+            return self.rewardValues["rejected"]
+        if self.board[end[0]][end[1]] is None and not self.champsOnBoard < self.level:
+            return self.rewardValues["rejected"]
+        self.nextFunction = None
+
+        new = self.bench[start]
+        old = self.board[end[0]][end[1]]
+        self.__to_bench(pyautogui.moveTo, start)
+        self.__to_board(pyautogui.dragTo, end)
+        self.bench[start] = old
+        self.board[end[0]][end[1]] = new
+        self.champsOnBoard += 1
+
         if self.champsOnBoard < self.level and sum(x is not None for x in self.bench) > 0:
             self.nextFunction = self.move_from_bench_to_board
 
+        if old is None:
+            # Champion was added
+            return self.rewardValues["add_champ_"+str(new["star"])]
+        else:
+            # Champions swapped
+            if new["star"] == old["star"]:
+                # Same level champions
+                return self.rewardValues["simple_swap"]
+            else:
+                return self.rewardValues["swap_"+str(old["star"])+"-"+str(new["star"])]
+
     def move_from_board_to_bench(self, start, end):
         if self.nextFunction is not None:
-            return
+            return self.rewardValues["rejected"]
         if self.board[start[0]][start[1]] is None:
-            return
+            return self.rewardValues["rejected"]
+
+        new = self.board[start[0]][start[1]]
+        old = self.bench[end]
         self.__to_board(pyautogui.moveTo, start)
         self.__to_bench(pyautogui.dragTo, end)
-        aux = self.board[start[0]][start[1]]
-        self.board[start[0]][start[1]] = self.bench[end]
-        self.bench[end] = aux
-        if self.board[start[0]][start[1]] is None:
+        self.board[start[0]][start[1]] = old
+        self.bench[end] = new
+
+        if old is None:
+            # Champion was removed
             self.champsOnBoard -= 1
             if self.champsOnBoard < self.level and sum(x is not None for x in self.bench) > 0:
                 self.nextFunction = self.move_from_bench_to_board
+            return self.rewardValues["remove_champ_"+str(new["star"])]
+        else:
+            # Champions swapped
+            if new["star"] == old["star"]:
+                # Same level champions
+                return self.rewardValues["simple_swap"]
+            else:
+                return self.rewardValues["swap_"+str(new["star"])+"-"+str(old["star"])]
 
     def move_in_bench(self, start, end):
         if self.nextFunction is not None:
-            return
+            return self.rewardValues["rejected"]
         if self.bench[start] is None:
-            return
+            return self.rewardValues["rejected"]
         self.__to_bench(pyautogui.moveTo, start)
         self.__to_bench(pyautogui.dragTo, end)
         aux = self.bench[start]
         self.bench[start] = self.bench[end]
         self.bench[end] = aux
+        return self.rewardValues["basic"]
 
     def move_in_board(self, start, end):
         if self.nextFunction is not None:
-            return
+            return self.rewardValues["rejected"]
         if self.board[start[0]][start[1]] is None:
-            return
+            return self.rewardValues["rejected"]
         self.__to_board(pyautogui.moveTo, start)
         self.__to_board(pyautogui.dragTo, end)
         aux = self.board[start[0]][start[1]]
         self.board[start[0]][start[1]] = self.board[end[0]][end[1]]
         self.board[end[0]][end[1]] = aux
+        return self.rewardValues["basic"]
 
     def sell_from_bench(self, position):
         if self.nextFunction is not None:
-            return
+            return self.rewardValues["rejected"]
         if self.bench[position] is None:
-            return
+            return self.rewardValues["rejected"]
         self.__to_bench(pyautogui.moveTo, position)
         if self.useKeyboard:
             pyautogui.press("e")
         else:
             pyautogui.dragTo(900, 1000, duration=self.mouseSpeed)
+        sold = self.bench[position]
         self.bench[position] = None
+        return self.rewardValues["sell_"+str(sold["star"])]
 
     def sell_from_board(self, position):
         if self.nextFunction is not None:
-            return
+            return self.rewardValues["rejected"]
         if self.board[position[0]][position[1]] is None:
-            return
+            return self.rewardValues["rejected"]
         self.__to_board(pyautogui.moveTo, position)
         if self.useKeyboard:
             pyautogui.press("e")
         else:
             pyautogui.dragTo(900, 1000, duration=self.mouseSpeed)
+        sold = self.board[position[0]][position[1]]
         self.board[position[0]][position[1]] = None
         self.champsOnBoard -= 1
         if self.champsOnBoard < self.level and sum(x is not None for x in self.bench) > 0:
             self.nextFunction = self.move_from_bench_to_board
+        return self.rewardValues["sell_"+str(sold["star"])]
 
     def buy_exp(self):
         if self.nextFunction is not None:
-            return
+            return self.rewardValues["rejected"]
         if self.gold < 4:
-            return
+            return self.rewardValues["rejected"]
         if self.useKeyboard:
             pyautogui.press("f")
         else:
             pyautogui.moveTo(370, 960, duration=self.mouseSpeed)
             left_click()
         self.refresh()
+        old_level = self.level
         self.__fetch_level()
         if self.champsOnBoard < self.level and sum(x is not None for x in self.bench) > 0:
             self.nextFunction = self.move_from_bench_to_board
+        if old_level < self.level:
+            return self.rewardValues["level_up"]
+        else:
+            return self.rewardValues["xp_buy"]
 
     def refresh_store(self):
         if self.nextFunction is not None:
-            return
+            return self.rewardValues["rejected"]
         if self.gold < 2:
-            return
+            return self.rewardValues["rejected"]
         if self.useKeyboard:
             pyautogui.press("d")
         else:
             pyautogui.moveTo(360, 1030, duration=self.mouseSpeed)
             left_click()
+        return self.rewardValues["rerolled"]
 
     def wait(self):
-        if self.nextFunction is not None:
-            return
+        # TODO - add timer check for every move
+        if self.nextFunction is not None or self.nextFunction != self.wait:
+            return self.rewardValues["rejected"]
+        self.nextFunction = None
         old_stage = self.stage
         while old_stage == self.stage:
             time.sleep(self.maxTime)
@@ -600,6 +646,7 @@ class ScreenInterpreter:
         self.__fetch_level()
         if self.champsOnBoard < self.level and sum(x is not None for x in self.bench) > 0:
             self.nextFunction = self.move_from_bench_to_board
+        return self.rewardValues["basic"]
 
     def clear_board(self):
         initial_mouse_speed = self.mouseSpeed
