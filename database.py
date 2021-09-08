@@ -24,8 +24,8 @@ class DDragon:
     items = []
     pool = {}
     odds = {}
+    requiredExp = {}
     rewardValues = {}
-    REJECTED = -50
 
     def load(self):
         # Gets latest set
@@ -58,5 +58,4 @@ class DDragon:
         return self
 
     def __init__(self):
-        self.requiredExp = {}
         self.load()

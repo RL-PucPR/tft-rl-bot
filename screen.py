@@ -8,8 +8,6 @@ import time
 from acquirer import Acquirer
 from database import DDragon
 
-REJECTED = DDragon.REJECTED
-
 
 def read(img, blacklist=".,_-~()", whitelist=None):
     """
@@ -252,6 +250,7 @@ class ScreenInterpreter:
     def __fetch_timer(self):
         # run tesseract to locate text
         # recognize turn timer
+        # TODO - Implement check for 1-? stages (different coordinates)
         upper_height_mod = 10 / 1080
         lower_height_mod = 32 / 1080
         left_width_mod = 1142 / 1920
@@ -369,6 +368,7 @@ class ScreenInterpreter:
     def __fetch_stage(self):
         # run tesseract to locate text
         # recognize current stage
+        # TODO - Implement check for 1-? stages (different coordinates)
         upper_height_mod = 10 / 1080
         lower_height_mod = 30 / 1080
         left_width_mod = 770 / 1920
@@ -556,7 +556,7 @@ class ScreenInterpreter:
         aux = self.bench[start]
         self.bench[start] = self.bench[end]
         self.bench[end] = aux
-        return self.rewardValues["basic"]
+        return self.rewardValues["simple_swap"]
 
     def move_in_board(self, start, end):
         if self.nextFunction is not None:
@@ -568,7 +568,7 @@ class ScreenInterpreter:
         aux = self.board[start[0]][start[1]]
         self.board[start[0]][start[1]] = self.board[end[0]][end[1]]
         self.board[end[0]][end[1]] = aux
-        return self.rewardValues["basic"]
+        return self.rewardValues["simple_swap"]
 
     def sell_from_bench(self, position):
         if self.nextFunction is not None:

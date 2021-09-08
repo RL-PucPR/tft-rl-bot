@@ -1,6 +1,6 @@
 pyautogui
 pytesseract
-stable-baselines
+stable-baselines3
 tensorflow==1.15
 gym
 numpy

@@ -1,15 +1,13 @@
+from time import sleep
+
+from stable_baselines3 import A2C
+from stable_baselines3.common.policies import MultiInputActorCriticPolicy
 
 from controller import Controller
-from screen import ScreenInterpreter
-from state import GameState
-from player import Player
-from time import sleep
 from database import DDragon
+from player import Player
+from screen import ScreenInterpreter
 from tft_bot.envs.game_state_env import GameStateEnv
-from stable_baselines.common.policies import MlpPolicy
-from stable_baselines.common import make_vec_env
-from stable_baselines import A2C
-from stable_baselines.common.env_checker import check_env
 
 
 def test_reader():
@@ -35,9 +33,20 @@ def test_trainer():
 
 
 def test_env():
-    env = GameStateEnv(ScreenInterpreter(max_time=1, speed=0.2), DDragon())
+    db = DDragon()
+    env = GameStateEnv(ScreenInterpreter(db, max_time=1, speed=0.2), db)
     # It will check your custom environment and output additional warnings if needed
-    check_env(env)
+    print("A")
+    # check_env(env)
+    # print("B")
+    model = A2C(MultiInputActorCriticPolicy, env, verbose=1)
+    model.learn(total_timesteps=20000)
+    obs = env.reset()
+    for i in range(2000):
+        action, _states = model.predict(obs)
+        obs, rewards, done, info = env.step(action)
+        env.render()
+    print("C")
 
 
 def teste():
@@ -47,8 +56,4 @@ def teste():
 if __name__ == '__main__':
     # test_trainer()
     # test_reader()
-    # test_env()
-    print("teste")
-    print(teste)
-    teste()
-    print("teste")
+    test_env()
