@@ -467,19 +467,19 @@ class ScreenInterpreter:
         action(base_width + modifier * position, height, duration=self.mouseSpeed)
 
     def __to_board(self, action, position):
-        if position[0] == 3:
+        if position[0] == 0:
             base_width = 575
             height = 675
             modifier = 130
-        elif position[0] == 2:
+        elif position[0] == 1:
             base_width = 530
             height = 590
             modifier = 125
-        elif position[0] == 1:
+        elif position[0] == 2:
             base_width = 605
             height = 510
             modifier = 120
-        elif position[0] == 0:
+        elif position[0] == 3:
             base_width = 560
             height = 440
             modifier = 115
@@ -654,10 +654,21 @@ class ScreenInterpreter:
 
         # Sell all from bench
         for i in range(9):
-            self.sell_from_bench(i)
+            self.__to_bench(pyautogui.moveTo, i)
+            if self.useKeyboard:
+                pyautogui.press("e")
+            else:
+                pyautogui.dragTo(900, 1000, duration=self.mouseSpeed)
+            self.bench[i] = None
         # Sell all from board
         for i in range(4):
             for j in range(7):
-                self.sell_from_board([i, j])
+                self.__to_board(pyautogui.moveTo, [i,j])
+                if self.useKeyboard:
+                    pyautogui.press("e")
+                else:
+                    pyautogui.dragTo(900, 1000, duration=self.mouseSpeed)
+                self.board[i][j] = None
+        self.champsOnBoard = 0
 
         self.mouseSpeed = initial_mouse_speed
