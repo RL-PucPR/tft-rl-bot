@@ -394,7 +394,8 @@ class ScreenInterpreter:
                     self.stage[0] % 10
                 ]
             if stage[1] == 4:
-                self.nextFunction = self.wait
+                # self.nextFunction = self.wait
+                self.wait()
         except:
             self.stage = [0, 0]
 
@@ -441,8 +442,12 @@ class ScreenInterpreter:
                 return
 
     def buy_champion(self, position):
-        if self.nextFunction is not None:
-            return self.rewardValues["rejected"]
+        self.refresh()
+        self.__fetch_timer()
+        if self.timer < self.maxTime:
+            self.wait()
+        #       if self.nextFunction is not None:
+        #            return self.rewardValues["rejected"]
         if self.store[position] is None:
             return self.rewardValues["rejected"]
         if None not in self.bench:
@@ -457,7 +462,11 @@ class ScreenInterpreter:
         reward = self.__champ_bought(self.store[position]["name"])
         self.store[position] = None
         if self.champsOnBoard < self.level and sum(x is not None for x in self.bench) > 0:
-            self.nextFunction = self.move_from_bench_to_board
+            # self.nextFunction = self.move_from_bench_to_board
+            for p in range(len(self.bench)):
+                if self.bench[p] is not None:
+                    break
+            self.move_from_bench_to_board(p, self.__next_board_available())
         return reward
 
     def __to_bench(self, action, position):
@@ -489,8 +498,12 @@ class ScreenInterpreter:
         action(base_width + modifier * position[1], height, duration=self.mouseSpeed)
 
     def move_from_bench_to_board(self, start, end):
-        if self.nextFunction is not None or self.nextFunction != self.move_from_bench_to_board:
-            return self.rewardValues["rejected"]
+        self.refresh()
+        self.__fetch_timer()
+        if self.timer < self.maxTime:
+            self.wait()
+        # if self.nextFunction is not None or self.nextFunction != self.move_from_bench_to_board:
+        #     return self.rewardValues["rejected"]
         if self.bench[start] is None:
             return self.rewardValues["rejected"]
         if self.board[end[0]][end[1]] is None and not self.champsOnBoard < self.level:
@@ -506,22 +519,30 @@ class ScreenInterpreter:
         self.champsOnBoard += 1
 
         if self.champsOnBoard < self.level and sum(x is not None for x in self.bench) > 0:
-            self.nextFunction = self.move_from_bench_to_board
+            # self.nextFunction = self.move_from_bench_to_board
+            for p in range(len(self.bench)):
+                if self.bench[p] is not None:
+                    break
+            self.move_from_bench_to_board(p, self.__next_board_available())
 
         if old is None:
             # Champion was added
-            return self.rewardValues["add_champ_"+str(new["star"])]
+            return self.rewardValues["add_champ_" + str(new["star"])]
         else:
             # Champions swapped
             if new["star"] == old["star"]:
                 # Same level champions
                 return self.rewardValues["simple_swap"]
             else:
-                return self.rewardValues["swap_"+str(old["star"])+"-"+str(new["star"])]
+                return self.rewardValues["swap_" + str(old["star"]) + "-" + str(new["star"])]
 
     def move_from_board_to_bench(self, start, end):
-        if self.nextFunction is not None:
-            return self.rewardValues["rejected"]
+        self.refresh()
+        self.__fetch_timer()
+        if self.timer < self.maxTime:
+            self.wait()
+        #       if self.nextFunction is not None:
+        #            return self.rewardValues["rejected"]
         if self.board[start[0]][start[1]] is None:
             return self.rewardValues["rejected"]
 
@@ -536,19 +557,27 @@ class ScreenInterpreter:
             # Champion was removed
             self.champsOnBoard -= 1
             if self.champsOnBoard < self.level and sum(x is not None for x in self.bench) > 0:
-                self.nextFunction = self.move_from_bench_to_board
-            return self.rewardValues["remove_champ_"+str(new["star"])]
+                # self.nextFunction = self.move_from_bench_to_board
+                for p in range(len(self.bench)):
+                    if self.bench[p] is not None:
+                        break
+                self.move_from_bench_to_board(p, self.__next_board_available())
+            return self.rewardValues["remove_champ_" + str(new["star"])]
         else:
             # Champions swapped
             if new["star"] == old["star"]:
                 # Same level champions
                 return self.rewardValues["simple_swap"]
             else:
-                return self.rewardValues["swap_"+str(new["star"])+"-"+str(old["star"])]
+                return self.rewardValues["swap_" + str(new["star"]) + "-" + str(old["star"])]
 
     def move_in_bench(self, start, end):
-        if self.nextFunction is not None:
-            return self.rewardValues["rejected"]
+        self.refresh()
+        self.__fetch_timer()
+        if self.timer < self.maxTime:
+            self.wait()
+        #       if self.nextFunction is not None:
+        #            return self.rewardValues["rejected"]
         if self.bench[start] is None:
             return self.rewardValues["rejected"]
         self.__to_bench(pyautogui.moveTo, start)
@@ -559,8 +588,12 @@ class ScreenInterpreter:
         return self.rewardValues["simple_swap"]
 
     def move_in_board(self, start, end):
-        if self.nextFunction is not None:
-            return self.rewardValues["rejected"]
+        self.refresh()
+        self.__fetch_timer()
+        if self.timer < self.maxTime:
+            self.wait()
+        #       if self.nextFunction is not None:
+        #            return self.rewardValues["rejected"]
         if self.board[start[0]][start[1]] is None:
             return self.rewardValues["rejected"]
         self.__to_board(pyautogui.moveTo, start)
@@ -571,8 +604,12 @@ class ScreenInterpreter:
         return self.rewardValues["simple_swap"]
 
     def sell_from_bench(self, position):
-        if self.nextFunction is not None:
-            return self.rewardValues["rejected"]
+        self.refresh()
+        self.__fetch_timer()
+        if self.timer < self.maxTime:
+            self.wait()
+        #       if self.nextFunction is not None:
+        #            return self.rewardValues["rejected"]
         if self.bench[position] is None:
             return self.rewardValues["rejected"]
         self.__to_bench(pyautogui.moveTo, position)
@@ -582,11 +619,15 @@ class ScreenInterpreter:
             pyautogui.dragTo(900, 1000, duration=self.mouseSpeed)
         sold = self.bench[position]
         self.bench[position] = None
-        return self.rewardValues["sell_"+str(sold["star"])]
+        return self.rewardValues["sell_" + str(sold["star"])]
 
     def sell_from_board(self, position):
-        if self.nextFunction is not None:
-            return self.rewardValues["rejected"]
+        self.refresh()
+        self.__fetch_timer()
+        if self.timer < self.maxTime:
+            self.wait()
+        #       if self.nextFunction is not None:
+        #            return self.rewardValues["rejected"]
         if self.board[position[0]][position[1]] is None:
             return self.rewardValues["rejected"]
         self.__to_board(pyautogui.moveTo, position)
@@ -598,12 +639,20 @@ class ScreenInterpreter:
         self.board[position[0]][position[1]] = None
         self.champsOnBoard -= 1
         if self.champsOnBoard < self.level and sum(x is not None for x in self.bench) > 0:
-            self.nextFunction = self.move_from_bench_to_board
-        return self.rewardValues["sell_"+str(sold["star"])]
+            # self.nextFunction = self.move_from_bench_to_board
+            for p in range(len(self.bench)):
+                if self.bench[p] is not None:
+                    break
+            self.move_from_bench_to_board(p, self.__next_board_available())
+        return self.rewardValues["sell_" + str(sold["star"])]
 
     def buy_exp(self):
-        if self.nextFunction is not None:
-            return self.rewardValues["rejected"]
+        self.refresh()
+        self.__fetch_timer()
+        if self.timer < self.maxTime:
+            self.wait()
+        #       if self.nextFunction is not None:
+        #            return self.rewardValues["rejected"]
         if self.gold < 4:
             return self.rewardValues["rejected"]
         if self.useKeyboard:
@@ -615,15 +664,23 @@ class ScreenInterpreter:
         old_level = self.level
         self.__fetch_level()
         if self.champsOnBoard < self.level and sum(x is not None for x in self.bench) > 0:
-            self.nextFunction = self.move_from_bench_to_board
+            # self.nextFunction = self.move_from_bench_to_board
+            for p in range(len(self.bench)):
+                if self.bench[p] is not None:
+                    break
+            self.move_from_bench_to_board(p, self.__next_board_available())
         if old_level < self.level:
             return self.rewardValues["level_up"]
         else:
             return self.rewardValues["xp_buy"]
 
     def refresh_store(self):
-        if self.nextFunction is not None:
-            return self.rewardValues["rejected"]
+        self.refresh()
+        self.__fetch_timer()
+        if self.timer < self.maxTime:
+            self.wait()
+        #       if self.nextFunction is not None:
+        #            return self.rewardValues["rejected"]
         if self.gold < 2:
             return self.rewardValues["rejected"]
         if self.useKeyboard:
@@ -634,9 +691,8 @@ class ScreenInterpreter:
         return self.rewardValues["rerolled"]
 
     def wait(self):
-        # TODO - add timer check for every move
-        if self.nextFunction is not None or self.nextFunction != self.wait:
-            return self.rewardValues["rejected"]
+        # if self.nextFunction is not None or self.nextFunction != self.wait:
+        #     return self.rewardValues["rejected"]
         self.nextFunction = None
         old_stage = self.stage
         while old_stage == self.stage:
@@ -645,7 +701,11 @@ class ScreenInterpreter:
             self.__fetch_stage()
         self.__fetch_level()
         if self.champsOnBoard < self.level and sum(x is not None for x in self.bench) > 0:
-            self.nextFunction = self.move_from_bench_to_board
+            # self.nextFunction = self.move_from_bench_to_board
+            for p in range(len(self.bench)):
+                if self.bench[p] is not None:
+                    break
+            self.move_from_bench_to_board(p, self.__next_board_available())
         return self.rewardValues["basic"]
 
     def clear_board(self):
@@ -658,16 +718,20 @@ class ScreenInterpreter:
             if self.useKeyboard:
                 pyautogui.press("e")
             else:
+                pyautogui.mouseDown()
                 pyautogui.dragTo(900, 1000, duration=self.mouseSpeed)
+                pyautogui.mouseUp()
             self.bench[i] = None
         # Sell all from board
         for i in range(4):
             for j in range(7):
-                self.__to_board(pyautogui.moveTo, [i,j])
+                self.__to_board(pyautogui.moveTo, [i, j])
                 if self.useKeyboard:
                     pyautogui.press("e")
                 else:
+                    pyautogui.mouseDown()
                     pyautogui.dragTo(900, 1000, duration=self.mouseSpeed)
+                    pyautogui.mouseUp()
                 self.board[i][j] = None
         self.champsOnBoard = 0
 

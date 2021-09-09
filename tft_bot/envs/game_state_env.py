@@ -118,39 +118,41 @@ class GameStateEnv(gym.GoalEnv, ABC):
             self.champion_index[database.champions[i]["name"]] = i
 
     def wait(self, params):
-        if params["start"] > 0 or params["end"] > 0:
-            return self.rejectedReward
+        # if params["start"] > 0 or params["end"] > 0:
+        #     return self.rejectedReward
         return self.acquirer.wait()
 
     def refresh_store(self, params):
-        if params["start"] > 0 or params["end"] > 0:
-            return self.rejectedReward
+        # if params["start"] > 0 or params["end"] > 0:
+        #     return self.rejectedReward
         return self.acquirer.refresh_store()
 
     def buy_exp(self, params):
-        if params["start"] > 0 or params["end"] > 0:
-            return self.rejectedReward
+        # if params["start"] > 0 or params["end"] > 0:
+        #     return self.rejectedReward
         return self.acquirer.buy_exp()
 
     def buy_champion(self, params):
-        if params["start"] > 4 or params["end"] > 0:
-            return self.rejectedReward
-        return self.acquirer.buy_champion(params["start"])
+        # if params["start"] > 4 or params["end"] > 0:
+        #     return self.rejectedReward
+        return self.acquirer.buy_champion(params["start"] % 5)
 
     def sell_from_bench(self, params):
-        if params["start"] > 8 or params["end"] > 0:
-            return self.rejectedReward
-        return self.acquirer.sell_from_bench(params["start"])
+        # if params["start"] > 8 or params["end"] > 0:
+        #     return self.rejectedReward
+        return self.acquirer.sell_from_bench(params["start"] % 9)
 
     def sell_from_board(self, params):
-        if params["end"] > 0:
-            return self.rejectedReward
+        # if params["end"] > 0:
+        #     return self.rejectedReward
         return self.acquirer.sell_from_board(get_board_position(params["start"]))
 
     def move_in_bench(self, params):
-        if params["start"] > 8 or params["end"] > 8 or params["start"] == params["end"]:
+        # if params["start"] > 8 or params["end"] > 8:
+        #     return self.rejectedReward
+        if params["start"] == params["end"]:
             return self.rejectedReward
-        return self.acquirer.move_in_bench(params["start"], params["end"])
+        return self.acquirer.move_in_bench(params["start"] % 9, params["end"] % 9)
 
     def move_in_board(self, params):
         if params["start"] == params["end"]:
@@ -158,14 +160,14 @@ class GameStateEnv(gym.GoalEnv, ABC):
         return self.acquirer.move_in_board(get_board_position(params["start"]), get_board_position(params["end"]))
 
     def move_from_bench_to_board(self, params):
-        if params["start"] > 8 or params["start"] == params["end"]:
-            return self.rejectedReward
-        return self.acquirer.move_from_bench_to_board(params["start"], get_board_position(params["end"]))
+        # if params["start"] > 8:
+        #     return self.rejectedReward
+        return self.acquirer.move_from_bench_to_board(params["start"] % 9, get_board_position(params["end"]))
 
     def move_from_board_to_bench(self, params):
-        if params["end"] > 8 or params["start"] == params["end"]:
-            return self.rejectedReward
-        return self.acquirer.move_from_board_to_bench(get_board_position(params["start"]), params["end"])
+        # if params["end"] > 8:
+        #     return self.rejectedReward
+        return self.acquirer.move_from_board_to_bench(get_board_position(params["start"]), params["end"] % 9)
 
     def get_observation(self):
         desired_goal = (
