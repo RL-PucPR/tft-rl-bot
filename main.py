@@ -20,16 +20,6 @@ from tft_bot.envs.game_state_env import GameStateEnv
 #         player.randomAction()
 #         si.fill_board()
 #         sleep(0.5)
-#
-#
-# def test_trainer():
-#     c = Controller()
-#     print(c.pool)
-#     print(c.odds)
-#     shop = c.refreshShop([None, None, None, None, None], 1)
-#     for i in range(9):
-#         print(shop)
-#         shop = c.refreshShop(shop, i + 1)
 
 
 def test_env():
@@ -47,6 +37,5 @@ def test_env():
 
 
 if __name__ == '__main__':
-    # test_trainer()
     # test_reader()
     test_env()

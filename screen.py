@@ -6,7 +6,6 @@ import pytesseract  # Image interpreter
 import pyautogui  # Screen manipulation
 import time
 from acquirer import Acquirer
-from database import DDragon
 
 
 def read(img, blacklist=".,_-~()", whitelist=None):
@@ -39,16 +38,12 @@ def left_click(delay=0.1):
     pyautogui.mouseUp()
 
 
-def is_same_champ(a, b):
-    return a is not None and b is not None and a["name"] == b["name"] and a["star"] == b["star"]
-
-
-class ScreenInterpreter:
+class ScreenInterpreter(Acquirer):
     # ScreenInterpreter will only work with the game running in fullscreen
 
     # constructor
     def __init__(self, database, max_time=2, keyboard=False, speed=0.1):
-        super().__init__()
+        super().__init__(database)
         pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
         # track relevant data on the frame
         w, h = pyautogui.size()  # Get the size of the primary monitor.
@@ -61,25 +56,6 @@ class ScreenInterpreter:
             "timestamp": 0,
         }
         self.maxTime = max_time
-        self.bench = [None] * 9
-        self.board = [[None] * 7 for _ in range(4)]
-        self.store = [None] * 5
-        self.champsOnBoard = 0
-        self.level = 1
-        self.gold = 0
-        self.xp = {
-            "actual": 0,
-            "required": 0,
-        }
-        self.hpList = [100] * 8
-        self.position = 7
-        self.timer = 0
-        self.stage = [0, 0]
-        self.done = False
-        self.lock = False
-        self.requiredExp = database.requiredExp
-        self.championPrices = database.championPrices
-        self.rewardValues = database.rewardValues
         self.useKeyboard = keyboard
         self.mouseSpeed = speed
         self.nextFunction = None
@@ -92,87 +68,6 @@ class ScreenInterpreter:
             self.__fetch_timer,
             self.__fetch_stage,
         ]
-
-    # Functions destined to control champion position
-    # Champion positions always prioritize leftmost and lowermost (for board)
-    # Bench positions are arrays of len == 1 and board are of len == 2
-    def __next_bench_available(self):
-        for i in range(len(self.bench)):
-            if self.bench[i] is None:
-                return [i]
-
-    def __next_board_available(self):
-        for i in range(len(self.board)):
-            for j in range(len((self.board[i]))):
-                if self.board[i][j] is None:
-                    return [i, j]
-
-    def __next_available(self):
-        # Next available prioritize bench over board
-        pos = self.__next_bench_available()
-        if pos is not None:
-            return pos
-
-        return self.__next_board_available()
-
-    def __can_merge(self, champion_pos):
-        # Returns the list of positions of the champions that would be merged
-        if len(champion_pos) > 1:
-            champion = self.board[champion_pos[0]][champion_pos[1]]
-        else:
-            champion = self.bench[champion_pos[0]]
-        positions = []
-        for i in range(len(self.board)):
-            for j in range(len((self.board[i]))):
-                if is_same_champ(self.board[i][j], champion):
-                    positions.append([i, j])
-                    if len(positions) == 3:
-                        return positions
-        for i in range(len(self.bench)):
-            if is_same_champ(self.bench[i], champion):
-                positions.append([i])
-                if len(positions) == 3:
-                    return positions
-        # Champion is not able to be merged
-        return False
-
-    def __merge(self, pos_list):
-        # Merging prioritize board over bench
-        # pos_list parameter is already ordered following priority
-        pos = pos_list[0]
-        if len(pos) > 1:
-            self.board[pos[0]][pos[1]]["star"] += 1
-        else:
-            self.bench[pos[0]]["star"] += 1
-
-        for aux in pos_list[1:]:
-            if len(aux) > 1:
-                self.board[aux[0]][aux[1]] = None
-                self.champsOnBoard -= 1
-            else:
-                self.bench[aux[0]] = None
-
-        return pos
-
-    def __champ_bought(self, champion_name):
-        pos = self.__next_available()
-        champion = {
-            "name": champion_name,
-            "star": 1
-        }
-        if len(pos) > 1:
-            self.board[pos[0]][pos[1]] = champion
-        else:
-            self.bench[pos[0]] = champion
-        pos_list = self.__can_merge(pos)
-        if pos_list:
-            pos = self.__merge(pos_list)
-            pos_list = self.__can_merge(pos)
-            if pos_list:
-                self.__merge(pos_list)
-                return self.rewardValues["combine_3"]
-            return self.rewardValues["combine_2"]
-        return self.rewardValues["simple_buy"]
 
     # Internal functions - called after refresh
     def __fetch_store(self):
@@ -399,8 +294,7 @@ class ScreenInterpreter:
         except:
             self.stage = [0, 0]
 
-    # main function: reads data from in-game screenshot
-    def refresh(self):
+    def __refresh(self):
         """
         Refresh screenshot if old enough.
         Defined by self.maxTime.
@@ -413,22 +307,10 @@ class ScreenInterpreter:
             }
 
     def get_observation(self):
-        self.refresh()
+        self.__refresh()
         for fetch in self.fetchFunctions:
             fetch()
-        return {
-            "store": self.store,
-            "board": self.board,
-            "bench": self.bench,
-            "gold": self.gold,
-            "level": self.level,
-            "xp": self.xp["actual"],
-            "hp": self.hpList[self.position],
-            "position": self.position,
-            "timer": self.timer,
-            "stage": self.stage,
-            "done": self.done
-        }
+        return super().get_observation()
 
     # Setters
     def fill_board(self):
@@ -442,7 +324,7 @@ class ScreenInterpreter:
                 return
 
     def buy_champion(self, position):
-        self.refresh()
+        self.__refresh()
         self.__fetch_timer()
         if self.timer < self.maxTime:
             self.wait()
@@ -498,7 +380,7 @@ class ScreenInterpreter:
         action(base_width + modifier * position[1], height, duration=self.mouseSpeed)
 
     def move_from_bench_to_board(self, start, end):
-        self.refresh()
+        self.__refresh()
         self.__fetch_timer()
         if self.timer < self.maxTime:
             self.wait()
@@ -537,7 +419,7 @@ class ScreenInterpreter:
                 return self.rewardValues["swap_" + str(old["star"]) + "-" + str(new["star"])]
 
     def move_from_board_to_bench(self, start, end):
-        self.refresh()
+        self.__refresh()
         self.__fetch_timer()
         if self.timer < self.maxTime:
             self.wait()
@@ -572,7 +454,7 @@ class ScreenInterpreter:
                 return self.rewardValues["swap_" + str(new["star"]) + "-" + str(old["star"])]
 
     def move_in_bench(self, start, end):
-        self.refresh()
+        self.__refresh()
         self.__fetch_timer()
         if self.timer < self.maxTime:
             self.wait()
@@ -588,7 +470,7 @@ class ScreenInterpreter:
         return self.rewardValues["simple_swap"]
 
     def move_in_board(self, start, end):
-        self.refresh()
+        self.__refresh()
         self.__fetch_timer()
         if self.timer < self.maxTime:
             self.wait()
@@ -604,7 +486,7 @@ class ScreenInterpreter:
         return self.rewardValues["simple_swap"]
 
     def sell_from_bench(self, position):
-        self.refresh()
+        self.__refresh()
         self.__fetch_timer()
         if self.timer < self.maxTime:
             self.wait()
@@ -622,7 +504,7 @@ class ScreenInterpreter:
         return self.rewardValues["sell_" + str(sold["star"])]
 
     def sell_from_board(self, position):
-        self.refresh()
+        self.__refresh()
         self.__fetch_timer()
         if self.timer < self.maxTime:
             self.wait()
@@ -647,7 +529,7 @@ class ScreenInterpreter:
         return self.rewardValues["sell_" + str(sold["star"])]
 
     def buy_exp(self):
-        self.refresh()
+        self.__refresh()
         self.__fetch_timer()
         if self.timer < self.maxTime:
             self.wait()
@@ -660,7 +542,7 @@ class ScreenInterpreter:
         else:
             pyautogui.moveTo(370, 960, duration=self.mouseSpeed)
             left_click()
-        self.refresh()
+        self.__refresh()
         old_level = self.level
         self.__fetch_level()
         if self.champsOnBoard < self.level and sum(x is not None for x in self.bench) > 0:
@@ -675,7 +557,7 @@ class ScreenInterpreter:
             return self.rewardValues["xp_buy"]
 
     def refresh_store(self):
-        self.refresh()
+        self.__refresh()
         self.__fetch_timer()
         if self.timer < self.maxTime:
             self.wait()
@@ -697,7 +579,7 @@ class ScreenInterpreter:
         old_stage = self.stage
         while old_stage == self.stage:
             time.sleep(self.maxTime)
-            self.refresh()
+            self.__refresh()
             self.__fetch_stage()
         self.__fetch_level()
         if self.champsOnBoard < self.level and sum(x is not None for x in self.bench) > 0:

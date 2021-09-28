@@ -3,7 +3,9 @@ from abc import ABC
 import gym
 from gym import spaces
 
-from util import get_board_position
+
+def get_board_position(position):
+    return [int(position / 7), position % 7]
 
 
 class GameStateEnv(gym.GoalEnv, ABC):
