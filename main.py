@@ -5,7 +5,7 @@ from stable_baselines3.common.policies import MultiInputActorCriticPolicy
 
 # from controller import Controller
 from database import DDragon
-# from player import Player
+# from fakeplayer import FakePlayer
 from screen import ScreenInterpreter
 from tft_bot.envs.game_state_env import GameStateEnv
 
@@ -13,7 +13,7 @@ from tft_bot.envs.game_state_env import GameStateEnv
 # def test_reader():
 #     sleep(1)
 #     si = ScreenInterpreter(database=DDragon().load(), max_time=2, speed=0.2)
-#     player = Player(si)
+#     player = FakePlayer(si)
 #     while True:
 #         si.refresh()
 #         print(si.get_observation())

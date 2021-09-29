@@ -83,7 +83,7 @@ class Acquirer(Player):
     hpList = [100] * 8
     position = 7
     timer = 0
-    stage = [0, 0]
+    stage = [1, 1]
     done = False
     lock = False
 

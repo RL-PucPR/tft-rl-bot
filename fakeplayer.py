@@ -1,7 +1,7 @@
 import random
 
 
-class Player:
+class FakePlayer:
     plays = []
 
     def randomBenchPosition(self):

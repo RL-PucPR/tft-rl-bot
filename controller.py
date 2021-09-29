@@ -55,12 +55,6 @@ class Controller:
     championInfo = {}
     dummy = None
 
-    def __get_champion_id(self, name):
-        cost = self.championInfo[name]["cost"]
-        for idx in range(len(self.pool[cost])):
-            if self.pool[cost][idx]["championName"] == name:
-                return idx
-
     def __change_pool_amount(self, shop, func):
         for champion in list(filter(lambda x: x is not None, shop)):
             cost = self.championInfo[champion]["cost"]
@@ -79,11 +73,32 @@ class Controller:
         shop = []
         for _ in range(5):
             if len(choices) > 0:
-                shop.append(random.choices(choices)[0])
+                champion = random.choices(choices)[0]
+                shop.append({"name": champion, "price": self.championInfo[champion]["cost"]})
             else:
                 shop.append(None)
         self.__change_pool_amount(shop, lambda a: a - 1)
         return shop
+
+    def sell_champ(self, champion):
+        star = champion["star"]
+        cost = self.championInfo[champion["name"]]["cost"]
+        if star == 1:
+            return cost
+        value = 3 ** (star - 1)
+        if cost == 1:
+            return value
+        return cost * value - 1
+
+    def buy_exp(self, level, xp):
+        lvl = level
+        newXp = xp["actual"] + 4
+        required = xp["required"]
+        if xp["required"] < newXp:
+            lvl += 1
+            newXp = newXp % xp["required"]
+            required = self.requiredExp[lvl]
+        return lvl, {"actual": newXp, "required": required}
 
     def refresh_shop(self, old_shop, level):
         self.__change_pool_amount(old_shop, lambda a: a + 1)
@@ -93,10 +108,20 @@ class Controller:
             self.__change_pool_amount(shop, lambda a: a + 1)
         return self.__generate_shop(level)
 
-    def battle(self, board):
+    def __battle(self, board):
         if self.battler is None:
             return 1
         return self.battler.battle(board, self.dummy)
+
+    def wait(self, emulator):
+        result = self.__battle(emulator.board)
+        if result > 0:
+            emulator.gold += 1
+        emulator.gold += 5
+        emulator.stage[1] += 1
+        if emulator.stage[1] > 7:
+            emulator.stage[0] += 1
+            emulator.stage[1] = 1
 
     def __init__(self, database, battler=None, multi=False):
         if multi:
@@ -132,5 +157,7 @@ class Controller:
             for cost, odd in oddsByCost.items():
                 tempOdds[int(cost)] = odd
             self.odds[int(level)] = tempOdds
+
+        self.requiredExp = database.requiredExp
 
         self.battler = battler
