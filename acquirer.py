@@ -5,28 +5,9 @@ def is_same_champ(a, b):
     return a is not None and b is not None and a["name"] == b["name"] and a["star"] == b["star"]
 
 
-class Acquirer(abc.ABC):
+class Player(abc.ABC):
     bench = [None] * 9
     board = [[None] * 7 for _ in range(4)]
-    store = [None] * 5
-    champsOnBoard = 0
-    level = 1
-    gold = 0
-    xp = {
-        "actual": 0,
-        "required": 0,
-    }
-    hpList = [100] * 8
-    position = 7
-    timer = 0
-    stage = [0, 0]
-    done = False
-    lock = False
-
-    def __init__(self, database):
-        self.requiredExp = database.requiredExp
-        self.championPrices = database.championPrices
-        self.rewardValues = database.rewardValues
 
     # Functions destined to control champion position
     # Champion positions always prioritize leftmost and lowermost (for board)
@@ -88,6 +69,28 @@ class Acquirer(abc.ABC):
                 self.bench[aux[0]] = None
 
         return pos
+
+
+class Acquirer(Player):
+    store = [None] * 5
+    champsOnBoard = 0
+    level = 1
+    gold = 0
+    xp = {
+        "actual": 0,
+        "required": 0,
+    }
+    hpList = [100] * 8
+    position = 7
+    timer = 0
+    stage = [0, 0]
+    done = False
+    lock = False
+
+    def __init__(self, database):
+        self.requiredExp = database.requiredExp
+        self.championPrices = database.championPrices
+        self.rewardValues = database.rewardValues
 
     def __champ_bought(self, champion_name):
         pos = self.__next_available()
