@@ -1,10 +1,6 @@
 from acquirer import Acquirer
 
 
-def swap(a, b):
-    return b, a
-
-
 class Emulator(Acquirer):
     def __init__(self, database, controller):
         super().__init__(database)
