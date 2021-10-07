@@ -8,6 +8,12 @@ def get_board_position(position):
     return [int(position / 7), position % 7]
 
 
+def get_champ_name(dictionary, index):
+    for key in dictionary:
+        if dictionary[key] == index:
+            return key
+
+
 class GameStateEnv(gym.GoalEnv, ABC):
     metadata = {'render.modes': ['human']}
 
@@ -95,13 +101,13 @@ class GameStateEnv(gym.GoalEnv, ABC):
                 n_champions + 1,  # Store2
                 n_champions + 1,  # Store3
                 n_champions + 1,  # Store4
-                128,  # Gold
+                1024,  # Gold
                 10,  # Level
                 80,  # XP
                 100 + 1,  # HP
                 8,  # Position
-                30,  # Timer
-                108  # Stage (n // 10 - n % 10)
+                31,  # Timer
+                100  # Stage (n // 10 - n % 10)
             ]),
             'achieved_goal': spaces.MultiDiscrete([
                 100 + 1,  # HP
@@ -119,39 +125,42 @@ class GameStateEnv(gym.GoalEnv, ABC):
         for i in range(n_champions):
             self.champion_index[database.champions[i]["name"]] = i
 
+    def set_acquirer(self, new_acquirer):
+        self.acquirer = new_acquirer
+
     def wait(self, params):
-        # if params["start"] > 0 or params["end"] > 0:
-        #     return self.rejectedReward
+        if params["start"] > 0 or params["end"] > 0:
+            return self.rejectedReward
         return self.acquirer.wait()
 
     def refresh_store(self, params):
-        # if params["start"] > 0 or params["end"] > 0:
-        #     return self.rejectedReward
+        if params["start"] > 0 or params["end"] > 0:
+            return self.rejectedReward
         return self.acquirer.refresh_store()
 
     def buy_exp(self, params):
-        # if params["start"] > 0 or params["end"] > 0:
-        #     return self.rejectedReward
+        if params["start"] > 0 or params["end"] > 0:
+            return self.rejectedReward
         return self.acquirer.buy_exp()
 
     def buy_champion(self, params):
-        # if params["start"] > 4 or params["end"] > 0:
-        #     return self.rejectedReward
+        if params["start"] > 4 or params["end"] > 0:
+            return self.rejectedReward
         return self.acquirer.buy_champion(params["start"] % 5)
 
     def sell_from_bench(self, params):
-        # if params["start"] > 8 or params["end"] > 0:
-        #     return self.rejectedReward
+        if params["start"] > 8 or params["end"] > 0:
+            return self.rejectedReward
         return self.acquirer.sell_from_bench(params["start"] % 9)
 
     def sell_from_board(self, params):
-        # if params["end"] > 0:
-        #     return self.rejectedReward
+        if params["end"] > 0:
+            return self.rejectedReward
         return self.acquirer.sell_from_board(get_board_position(params["start"]))
 
     def move_in_bench(self, params):
-        # if params["start"] > 8 or params["end"] > 8:
-        #     return self.rejectedReward
+        if params["start"] > 8 or params["end"] > 8:
+            return self.rejectedReward
         if params["start"] == params["end"]:
             return self.rejectedReward
         return self.acquirer.move_in_bench(params["start"] % 9, params["end"] % 9)
@@ -162,13 +171,13 @@ class GameStateEnv(gym.GoalEnv, ABC):
         return self.acquirer.move_in_board(get_board_position(params["start"]), get_board_position(params["end"]))
 
     def move_from_bench_to_board(self, params):
-        # if params["start"] > 8:
-        #     return self.rejectedReward
+        if params["start"] > 8:
+            return self.rejectedReward
         return self.acquirer.move_from_bench_to_board(params["start"] % 9, get_board_position(params["end"]))
 
     def move_from_board_to_bench(self, params):
-        # if params["end"] > 8:
-        #     return self.rejectedReward
+        if params["end"] > 8:
+            return self.rejectedReward
         return self.acquirer.move_from_board_to_bench(get_board_position(params["start"]), params["end"] % 9)
 
     def get_observation(self):
@@ -283,8 +292,8 @@ class GameStateEnv(gym.GoalEnv, ABC):
 
     def step(self, action):
         reward = self.action_functions[action[0]]({"start": action[1], "end": action[2]})
-        print(action, reward)
         observation, done = self.get_observation()
+        # print(action, reward)
         observation["achieved_goal"] += (reward - self.minReward,)
         observation["desired_goal"] += (self.maxReward - self.minReward,)
         info = {}
@@ -292,8 +301,8 @@ class GameStateEnv(gym.GoalEnv, ABC):
 
     def reset(self):
         super().reset()
-        self.acquirer.clear_board()
-        self.acquirer.wait()
+        self.acquirer.reset()
+        # self.acquirer.wait()
         observation = self.get_observation()[0]
         observation["achieved_goal"] += (0 - self.minReward,)
         observation["desired_goal"] += (0 - self.minReward,)
@@ -303,7 +312,61 @@ class GameStateEnv(gym.GoalEnv, ABC):
         return achieved_goal[2] + self.minReward
 
     def render(self, mode='human'):
-        print(self.get_observation()[0])
+        if mode != "human":
+            return
+        obs = self.get_observation()[0]["observation"]
+        txt = "| "
+        print("Board:")
+        for i in range(len(obs)):
+            value = obs[i]
+            if i < 7 * 4:
+                if value < 260:
+                    txt += get_champ_name(self.champion_index, int(value/4))
+                    txt += "*" * (value % 4)
+                else:
+                    txt += "None"
+                txt += " | "
+                if (i+1) % 7 == 0:
+                    print("\t"+txt)
+                    txt = "| "
+            elif i < 7 * 4 + 9:
+                if value < 260:
+                    txt += get_champ_name(self.champion_index, int(value/4))
+                    txt += "*" * (value % 4)
+                else:
+                    txt += "None"
+                txt += " | "
+            elif i == 7 * 4 + 9:
+                print("Bench:")
+                print("\t" + txt)
+                txt = "| "
+                if value < 56:
+                    txt += get_champ_name(self.champion_index, value)
+                else:
+                    txt += "None"
+                txt += " | "
+            elif i < 7 * 4 + 9 + 5:
+                if value < 56:
+                    txt += get_champ_name(self.champion_index, value)
+                else:
+                    txt += "None"
+                txt += " | "
+            elif i == 7 * 4 + 9 + 5:
+                print("Store:")
+                print("\t" + txt)
+                print("Gold: " + str(value))
+            elif i == 7 * 4 + 9 + 5 + 1:
+                print("Level: " + str(value))
+            elif i == 7 * 4 + 9 + 5 + 2:
+                print("XP: " + str(value))
+            elif i == 7 * 4 + 9 + 5 + 3:
+                print("HP: " + str(value))
+            elif i == 7 * 4 + 9 + 5 + 4:
+                print("Position: " + str(value+1))
+            elif i == 7 * 4 + 9 + 5 + 5:
+                print("Timer: " + str(value))
+            elif i == 7 * 4 + 9 + 5 + 6:
+                print("Stage: " + str(int(value / 10)) + "-" + str(value % 10))
 
     # def close(self):
     #     ...

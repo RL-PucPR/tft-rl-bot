@@ -3,27 +3,30 @@ from acquirer import Player
 
 
 class DummyPlayer(Player):
+    champsOnBoard = 0
+    hp = 100
 
     def __champ_bought(self, champion_name):
-        pos = self.__next_available()
+        pos = self.next_available()
         champion = {
             "name": champion_name,
             "star": 1
         }
         if len(pos) > 1:
             self.board[pos[0]][pos[1]] = champion
+            self.champsOnBoard += 1
         else:
             self.bench[pos[0]] = champion
-        pos_list = self.__can_merge(pos)
+        pos_list = self.can_merge(pos)
         if pos_list:
-            pos = self.__merge(pos_list)
-            pos_list = self.__can_merge(pos)
+            pos = self.merge(pos_list)
+            pos_list = self.can_merge(pos)
             if pos_list:
-                self.__merge(pos_list)
+                self.merge(pos_list)
 
     def buy_champs(self, shop, n):
         for _ in range(n):
-            self.__champ_bought(shop.pop(random.randint(0, len(shop)-1)))
+            self.__champ_bought(shop.pop(random.randint(0, len(shop)-1))["name"])
         return shop
 
 
@@ -55,13 +58,21 @@ class Controller:
     championInfo = {}
     dummy = None
 
-    def __change_pool_amount(self, shop, func):
-        for champion in list(filter(lambda x: x is not None, shop)):
-            cost = self.championInfo[champion]["cost"]
-            for idx in range(len(self.pool[cost])):
-                if self.pool[cost][idx]["championName"] == champion:
+    def __change_pool_amount(self, champion, func):
+        if "star" in champion:
+            star = champion["star"]
+        else:
+            star = 1
+        cost = self.championInfo[champion["name"]]["cost"]
+        for idx in range(len(self.pool[cost])):
+            if self.pool[cost][idx]["championName"] == champion["name"]:
+                for _ in range(star):
                     self.pool[cost][idx]["amount"] = func(self.pool[cost][idx]["amount"])
-                    break
+                return
+
+    def __change_pool_amount_shop(self, shop, func):
+        for champion in list(filter(lambda x: x is not None, shop)):
+            self.__change_pool_amount(champion, func)
 
     def __generate_shop(self, level):
         oddsByCost = self.odds[level]
@@ -77,12 +88,13 @@ class Controller:
                 shop.append({"name": champion, "price": self.championInfo[champion]["cost"]})
             else:
                 shop.append(None)
-        self.__change_pool_amount(shop, lambda a: a - 1)
+        self.__change_pool_amount_shop(shop, lambda a: a - 1)
         return shop
 
     def sell_champ(self, champion):
         star = champion["star"]
         cost = self.championInfo[champion["name"]]["cost"]
+        self.__change_pool_amount(champion, lambda a: a + 1)
         if star == 1:
             return cost
         value = 3 ** (star - 1)
@@ -101,30 +113,94 @@ class Controller:
         return lvl, {"actual": newXp, "required": required}
 
     def refresh_shop(self, old_shop, level):
-        self.__change_pool_amount(old_shop, lambda a: a + 1)
-        if self.dummy is not None and old_shop.count(None) > 0:
+        self.__change_pool_amount_shop(old_shop, lambda a: a + 1)
+        if self.dummy is not None and old_shop.count(None) > 0 and self.dummy.champsOnBoard < level:
             shop = self.__generate_shop(level)
             shop = self.dummy.buy_champs(shop, old_shop.count(None))
-            self.__change_pool_amount(shop, lambda a: a + 1)
+            self.__change_pool_amount_shop(shop, lambda a: a + 1)
         return self.__generate_shop(level)
 
     def __battle(self, board):
-        if self.battler is None:
-            return 1
-        return self.battler.battle(board, self.dummy)
+        # If self.dummy is not None, use it as opposing board
+        # If self.dummy is None, await for another battle call and use both as opponents
+        if self.dummy is None:
+            raise NotImplementedError
+        else:
+            opp_board = self.dummy.board
+        # If result == 0 -> Draw
+        # If result > 0 -> Win
+        # If result < 0 -> Loss
+        result = 0
+        for i in range(len(board)):
+            for j in range(len(board[i])):
+                if board[i][j] is not None:
+                    result += board[i][j]["star"]
+                if opp_board[i][j] is not None:
+                    result -= opp_board[i][j]["star"]
+        return result
 
     def wait(self, emulator):
         result = self.__battle(emulator.board)
         if result > 0:
             emulator.gold += 1
+            if self.dummy.hp < (2 + result):
+                emulator.position = 0
+                emulator.done = True
+                return
+            self.dummy.hp -= (2 + result)
+        elif result < 0:
+            if emulator.hpList[emulator.position] < (2 + result):
+                emulator.hpList[emulator.position] = 0
+                emulator.position = 1
+                emulator.done = True
+                return
+            emulator.hpList[emulator.position] -= (2 + result)
+        else:
+            if self.dummy.hp < 2:
+                emulator.position = 0
+                emulator.done = True
+                return
+            self.dummy.hp -= 2
+            if emulator.hpList[emulator.position] < 2:
+                emulator.hpList[emulator.position] = 0
+                emulator.position = 2
+                emulator.done = True
+                return
+            emulator.hpList[emulator.position] -= 2
+
+        if emulator.hpList[emulator.position] < self.dummy.hp:
+            emulator.hpList[1] = emulator.hpList[emulator.position]
+            emulator.position = 1
+            emulator.hpList[0] = self.dummy.hp
+        else:
+            emulator.hpList[0] = emulator.hpList[emulator.position]
+            emulator.position = 0
+            emulator.hpList[1] = self.dummy.hp
+
         emulator.gold += 5
+
+        lvl = emulator.level
+        if lvl < 9:
+            newXp = emulator.xp["actual"] + 2
+            required = emulator.xp["required"]
+            if emulator.xp["required"] < newXp:
+                lvl += 1
+                newXp = newXp % emulator.xp["required"]
+                required = self.requiredExp[lvl]
+            emulator.level = lvl
+            emulator.xp = {"actual": newXp, "required": required}
+
         emulator.stage[1] += 1
         if emulator.stage[1] > 7:
             emulator.stage[0] += 1
             emulator.stage[1] = 1
 
-    def __init__(self, database, battler=None, multi=False):
-        if multi:
+        emulator.store = self.refresh_shop(emulator.store, emulator.level)
+
+        emulator.timer = 30
+
+    def __init__(self, database, multiprocessing=False):
+        if multiprocessing:
             raise NotImplementedError
         else:
             self.dummy = DummyPlayer()
@@ -159,5 +235,3 @@ class Controller:
             self.odds[int(level)] = tempOdds
 
         self.requiredExp = database.requiredExp
-
-        self.battler = battler

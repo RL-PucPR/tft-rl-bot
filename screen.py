@@ -313,16 +313,6 @@ class ScreenInterpreter(Acquirer):
         return super().get_observation()
 
     # Setters
-    def fill_board(self):
-        while self.champsOnBoard < self.level:
-            pos = self.__next_board_available()
-            for i in range(len(self.bench)):
-                if self.bench[i] is not None:
-                    self.move_from_bench_to_board(i, pos)
-                    break
-            else:
-                return
-
     def buy_champion(self, position):
         self.__refresh()
         self.__fetch_timer()
@@ -341,7 +331,7 @@ class ScreenInterpreter(Acquirer):
         modifier = 200
         pyautogui.moveTo(base_width + modifier * position, height, duration=self.mouseSpeed)
         left_click()
-        reward = self.__champ_bought(self.store[position]["name"])
+        reward = self.champ_bought(self.store[position]["name"])
         self.store[position] = None
         if self.champsOnBoard < self.level and sum(x is not None for x in self.bench) > 0:
             # self.nextFunction = self.move_from_bench_to_board
@@ -398,17 +388,16 @@ class ScreenInterpreter(Acquirer):
         self.__to_board(pyautogui.dragTo, end)
         self.bench[start] = old
         self.board[end[0]][end[1]] = new
-        self.champsOnBoard += 1
-
-        if self.champsOnBoard < self.level and sum(x is not None for x in self.bench) > 0:
-            # self.nextFunction = self.move_from_bench_to_board
-            for p in range(len(self.bench)):
-                if self.bench[p] is not None:
-                    break
-            self.move_from_bench_to_board(p, self.__next_board_available())
 
         if old is None:
             # Champion was added
+            self.champsOnBoard += 1
+            if self.champsOnBoard < self.level and sum(x is not None for x in self.bench) > 0:
+                # self.nextFunction = self.move_from_bench_to_board
+                for p in range(len(self.bench)):
+                    if self.bench[p] is not None:
+                        break
+                self.move_from_bench_to_board(p, self.__next_board_available())
             return self.rewardValues["add_champ_" + str(new["star"])]
         else:
             # Champions swapped
@@ -590,7 +579,7 @@ class ScreenInterpreter(Acquirer):
             self.move_from_bench_to_board(p, self.__next_board_available())
         return self.rewardValues["basic"]
 
-    def clear_board(self):
+    def reset(self):
         initial_mouse_speed = self.mouseSpeed
         self.mouseSpeed = 0.1
 

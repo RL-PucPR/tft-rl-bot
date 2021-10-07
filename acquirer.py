@@ -22,8 +22,9 @@ class Player(abc.ABC):
             for j in range(len((self.board[i]))):
                 if self.board[i][j] is None:
                     return [i, j]
+        print("wait")
 
-    def __next_available(self):
+    def next_available(self):
         # Next available prioritize bench over board
         pos = self.__next_bench_available()
         if pos is not None:
@@ -31,7 +32,7 @@ class Player(abc.ABC):
 
         return self.__next_board_available()
 
-    def __can_merge(self, champion_pos):
+    def can_merge(self, champion_pos):
         # Returns the list of positions of the champions that would be merged
         if len(champion_pos) > 1:
             champion = self.board[champion_pos[0]][champion_pos[1]]
@@ -52,7 +53,7 @@ class Player(abc.ABC):
         # Champion is not able to be merged
         return False
 
-    def __merge(self, pos_list):
+    def merge(self, pos_list):
         # Merging prioritize board over bench
         # pos_list parameter is already ordered following priority
         pos = pos_list[0]
@@ -78,7 +79,7 @@ class Acquirer(Player):
     gold = 0
     xp = {
         "actual": 0,
-        "required": 0,
+        "required": 1,
     }
     hpList = [100] * 8
     position = 7
@@ -92,8 +93,8 @@ class Acquirer(Player):
         self.championPrices = database.championPrices
         self.rewardValues = database.rewardValues
 
-    def __champ_bought(self, champion_name):
-        pos = self.__next_available()
+    def champ_bought(self, champion_name):
+        pos = self.next_available()
         champion = {
             "name": champion_name,
             "star": 1
@@ -102,12 +103,12 @@ class Acquirer(Player):
             self.board[pos[0]][pos[1]] = champion
         else:
             self.bench[pos[0]] = champion
-        pos_list = self.__can_merge(pos)
+        pos_list = self.can_merge(pos)
         if pos_list:
-            pos = self.__merge(pos_list)
-            pos_list = self.__can_merge(pos)
+            pos = self.merge(pos_list)
+            pos_list = self.can_merge(pos)
             if pos_list:
-                self.__merge(pos_list)
+                self.merge(pos_list)
                 return self.rewardValues["combine_3"]
             return self.rewardValues["combine_2"]
         return self.rewardValues["simple_buy"]
@@ -126,6 +127,16 @@ class Acquirer(Player):
             "stage": self.stage,
             "done": self.done
         }
+
+    def fill_board(self):
+        while self.champsOnBoard < self.level:
+            pos = self.__next_board_available()
+            for i in range(len(self.bench)):
+                if self.bench[i] is not None:
+                    self.move_from_bench_to_board(i, pos)
+                    break
+            else:
+                return
 
     @abc.abstractmethod
     def buy_champion(self, position):
@@ -168,5 +179,5 @@ class Acquirer(Player):
         return 0
 
     @abc.abstractmethod
-    def clear_board(self):
+    def reset(self):
         return 0
