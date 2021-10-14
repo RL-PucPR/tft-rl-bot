@@ -8,6 +8,7 @@ def is_same_champ(a, b):
 class Player(abc.ABC):
     bench = [None] * 9
     board = [[None] * 7 for _ in range(4)]
+    champsOnBoard = 0
 
     # Functions destined to control champion position
     # Champion positions always prioritize leftmost and lowermost (for board)
@@ -17,12 +18,11 @@ class Player(abc.ABC):
             if self.bench[i] is None:
                 return [i]
 
-    def __next_board_available(self):
-        for i in range(len(self.board)):
-            for j in range(len((self.board[i]))):
-                if self.board[i][j] is None:
-                    return [i, j]
-        print("wait")
+    def next_board_available(self):
+        for i in range(len(self.board), 0, -1):
+            for j in range(len((self.board[i-1]))):
+                if self.board[i-1][j] is None:
+                    return [i-1, j]
 
     def next_available(self):
         # Next available prioritize bench over board
@@ -30,7 +30,7 @@ class Player(abc.ABC):
         if pos is not None:
             return pos
 
-        return self.__next_board_available()
+        return self.next_board_available()
 
     def can_merge(self, champion_pos):
         # Returns the list of positions of the champions that would be merged
@@ -74,7 +74,6 @@ class Player(abc.ABC):
 
 class Acquirer(Player):
     store = [None] * 5
-    champsOnBoard = 0
     level = 1
     gold = 0
     xp = {
@@ -130,7 +129,7 @@ class Acquirer(Player):
 
     def fill_board(self):
         while self.champsOnBoard < self.level:
-            pos = self.__next_board_available()
+            pos = self.next_board_available()
             for i in range(len(self.bench)):
                 if self.bench[i] is not None:
                     self.move_from_bench_to_board(i, pos)

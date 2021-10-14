@@ -22,68 +22,69 @@ from tft_bot.envs.game_state_env import GameStateEnv
 #         si.fill_board()
 #         sleep(0.5)
 
-def test():
+def train_emulator(load=False):
     db = DDragon()
     acquirer = Emulator(db, Controller(db))
     env = GameStateEnv(acquirer, db)
-    # It will check your custom environment and output additional warnings if needed
-    # check_env(env)
     model = A2C(MultiInputActorCriticPolicy, env, verbose=1)
-    model.learn(total_timesteps=200000)
-    env = GameStateEnv(ScreenInterpreter(db, max_time=1, speed=0.2), db)
-    for _ in range(10):
-        i = 0
-        done = False
-        obs = env.reset()
-        while not done:
-            action, _states = model.predict(obs)
-            obs, rewards, done, info = env.step(action)
-            i += 1
-            # if action[0] == 0:
-            #     print("Iteração: "+str(i))
-            #     print(">>")
-            #     env.render()
-        print("\n\nEnd")
-        env.render()
-
-
-def test_emulator(load=False):
-    db = DDragon()
-    acquirer = Emulator(db, Controller(db))
-    env = GameStateEnv(acquirer, db)
-    # It will check your custom environment and output additional warnings if needed
-    # check_env(env))
-    model = A2C(MultiInputActorCriticPolicy, env, verbose=1)
-    n = 10000
-    n_log = 10
     if load:
-        model.load("data/teste")
-    else:
-        model.learn(total_timesteps=n*5, log_interval=int(n/n_log))
-        model.save("data/teste")
+        model.load("data/model")
+    n = 10000
+    n_log = 100
+    model.learn(total_timesteps=n*5, log_interval=int(n/n_log))
+    model.save("data/model")
     obs = env.reset()
-    # for i in range(20000):
+    i = 0
+    prev = 0
     done = False
     while not done:
         try:
             action, _states = model.predict(obs)
+            i += 1
         except RuntimeError:
             continue
         obs, rewards, done, info = env.step(action)
-        # if i % 100 > 0 and rewards == -100:
         if rewards == -100:
             continue
-        if action[0] == 8:
-            print("\nAction: ", action)
-            print("Reward: ", rewards)
-            env.render()
-        if done:
-            print("\nDONE\n-------------------------------------\n")
-            env.render()
-            obs = env.reset()
+        print("Iter: ", i-prev)
+        prev = i
+        env.render()
+    print("\nDONE\n-------------------------------------\n")
+    env.render()
+    print("Iter: ", i)
+
+
+def test(load=True):
+    db = DDragon()
+    acquirer = Emulator(db, Controller(db))
+    env = GameStateEnv(acquirer, db)
+    model = A2C(MultiInputActorCriticPolicy, env, verbose=1)
+    if load:
+        model.load("data/teste")
+    else:
+        n = 1000
+        n_log = 10
+        model.learn(total_timesteps=n*5, log_interval=int(n/n_log))
+    env.set_acquirer(ScreenInterpreter(db, max_time=0.5, speed=0.1))
+    i = 0
+    prev = 0
+    done = False
+    obs = env.reset()
+    while not done:
+        action, _states = model.predict(obs)
+        obs, rewards, done, info = env.step(action)
+        i += 1
+        if rewards == -100:
+            continue
+        print("Iter: ", i - prev)
+        prev = i
+        env.render()
+    print("\n\nEnd")
+    env.render()
+    print("Iter: ", i)
 
 
 if __name__ == '__main__':
     # test_reader()
-    # test()
-    test_emulator(True)
+    # train_emulator(True)
+    test()

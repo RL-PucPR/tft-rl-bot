@@ -1,4 +1,5 @@
 from abc import ABC
+import time
 
 import gym
 from gym import spaces
@@ -293,7 +294,6 @@ class GameStateEnv(gym.GoalEnv, ABC):
     def step(self, action):
         reward = self.action_functions[action[0]]({"start": action[1], "end": action[2]})
         observation, done = self.get_observation()
-        # print(action, reward)
         observation["achieved_goal"] += (reward - self.minReward,)
         observation["desired_goal"] += (self.maxReward - self.minReward,)
         info = {}
