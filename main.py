@@ -1,3 +1,4 @@
+import time
 from time import sleep
 
 from stable_baselines3 import A2C
@@ -28,21 +29,18 @@ def train_emulator(load=False):
     env = GameStateEnv(acquirer, db)
     model = A2C(MultiInputActorCriticPolicy, env, verbose=1)
     if load:
-        model.load("data/model")
-    n = 10000
-    n_log = 100
-    model.learn(total_timesteps=n*5, log_interval=int(n/n_log))
-    model.save("data/model")
+        model.load("data/model2")
+    # n = 500000
+    # n_log = 100
+    # model.learn(total_timesteps=n*5, log_interval=int(n/n_log))
+    # model.save("data/model2")
     obs = env.reset()
     i = 0
     prev = 0
     done = False
     while not done:
-        try:
-            action, _states = model.predict(obs)
-            i += 1
-        except RuntimeError:
-            continue
+        action, _states = model.predict(obs)
+        i += 1
         obs, rewards, done, info = env.step(action)
         if rewards == -100:
             continue
@@ -60,12 +58,12 @@ def test(load=True):
     env = GameStateEnv(acquirer, db)
     model = A2C(MultiInputActorCriticPolicy, env, verbose=1)
     if load:
-        model.load("data/teste")
+        model.load("data/model2")
     else:
         n = 1000
         n_log = 10
         model.learn(total_timesteps=n*5, log_interval=int(n/n_log))
-    env.set_acquirer(ScreenInterpreter(db, max_time=0.5, speed=0.1))
+    env.set_acquirer(ScreenInterpreter(db, max_time=0.5, speed=0.2))
     i = 0
     prev = 0
     done = False
@@ -86,5 +84,5 @@ def test(load=True):
 
 if __name__ == '__main__':
     # test_reader()
-    # train_emulator(True)
-    test()
+    # train_emulator(load=True)
+    test(load=True)

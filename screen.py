@@ -374,7 +374,9 @@ class ScreenInterpreter(Acquirer):
         new = self.bench[start]
         old = self.board[end[0]][end[1]]
         self.__to_bench(pyautogui.moveTo, start)
+        pyautogui.mouseDown()
         self.__to_board(pyautogui.dragTo, end)
+        pyautogui.mouseUp()
         self.bench[start] = old
         self.board[end[0]][end[1]] = new
 
@@ -407,7 +409,9 @@ class ScreenInterpreter(Acquirer):
         new = self.board[start[0]][start[1]]
         old = self.bench[end]
         self.__to_board(pyautogui.moveTo, start)
+        pyautogui.mouseDown()
         self.__to_bench(pyautogui.dragTo, end)
+        pyautogui.mouseUp()
         self.board[start[0]][start[1]] = old
         self.bench[end] = new
 
@@ -435,7 +439,9 @@ class ScreenInterpreter(Acquirer):
         if self.timer < self.maxTime:
             self.wait()
         self.__to_bench(pyautogui.moveTo, start)
+        pyautogui.mouseDown()
         self.__to_bench(pyautogui.dragTo, end)
+        pyautogui.mouseUp()
         aux = self.bench[start]
         self.bench[start] = self.bench[end]
         self.bench[end] = aux
@@ -448,7 +454,9 @@ class ScreenInterpreter(Acquirer):
         if self.timer < self.maxTime:
             self.wait()
         self.__to_board(pyautogui.moveTo, start)
+        pyautogui.mouseDown()
         self.__to_board(pyautogui.dragTo, end)
+        pyautogui.mouseUp()
         aux = self.board[start[0]][start[1]]
         self.board[start[0]][start[1]] = self.board[end[0]][end[1]]
         self.board[end[0]][end[1]] = aux
@@ -464,7 +472,9 @@ class ScreenInterpreter(Acquirer):
         if self.useKeyboard:
             pyautogui.press("e")
         else:
+            pyautogui.mouseDown()
             pyautogui.dragTo(900, 1000, duration=self.mouseSpeed)
+            pyautogui.mouseUp()
         sold = self.bench[position]
         self.bench[position] = None
         return self.rewardValues["sell_" + str(sold["star"])]
@@ -479,7 +489,9 @@ class ScreenInterpreter(Acquirer):
         if self.useKeyboard:
             pyautogui.press("e")
         else:
+            pyautogui.mouseDown()
             pyautogui.dragTo(900, 1000, duration=self.mouseSpeed)
+            pyautogui.mouseUp()
         sold = self.board[position[0]][position[1]]
         self.board[position[0]][position[1]] = None
         self.champsOnBoard -= 1
